@@ -11,5 +11,5 @@ GET /api/locations/{version}/{source_id}?data={content}&token={token}
 Send Alert API:
 GET /api/alerts/{version}/{source_id}/{alert_type}?data={content}&token={token}
 
-Send Location API:
+Send Event API:
 GET /api/events/{version}/{source_id}?data={content}&token={token}

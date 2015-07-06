@@ -19,6 +19,7 @@ module.exports = router;
 
 //Functions
 function send_to_kinesis(version, source_id, data) {
+	console.log('Received event: ' + version + '|' + source_id + '|' + data);
 	var params = {
 	  Data: data, 
 	  PartitionKey: source_id,

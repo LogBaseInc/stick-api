@@ -2,7 +2,7 @@
   "name": "stick-api",
   "version": "1.0.0",
   "description": "Stick API",
-  "main": "server.js",
+  "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,6 +13,7 @@
   "author": "Abishek Baskaran",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.1.36",
     "express": "^4.13.0"
   }
 }

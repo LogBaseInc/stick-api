@@ -15,6 +15,9 @@ router.get('/:version/:source_id', function(req, res) {
 	var version = req.params.version;
 	var source_id = req.params.source_id;
 	var data = req.query.data;
+	var token = req.query.token;
+	//TODO Authenticate token
+
 	//1. Send to Kinesis
 	send_to_kinesis(version, source_id, data);
 	//2. Update Firebase with the location

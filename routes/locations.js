@@ -4,6 +4,7 @@ var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 var kinesis = new AWS.Kinesis();
 var kinesis_stream = 'stick-locations';
+var Firebase = require("firebase");
 
 // middleware specific to this router
 router.use(function timeLog(req, res, next) {

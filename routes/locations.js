@@ -137,7 +137,6 @@ function send_to_firebase(version, source_id, data, account_id) {
 	//Take the last element in parsed data and update f/b
 	if(parsed_data.length > 0) {
 		var recent_location = parsed_data[parsed_data.length - 1];
-		//TODO improve this
 		var live_car = firebase_ref.child('/accounts/' + account_id + '/livecars/' + source_id);
 		live_car.update({
 			'latitude': recent_location.lat,

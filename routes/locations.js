@@ -53,10 +53,14 @@ router.get('/:version/:source_id', function(req, res) {
 
 	var account_id = device_cache[source_id];
 	if(account_id != null) {
-		//1. Update Firebase with the location
-		send_to_firebase(version, source_id, data, account_id);
-		//2. Send to Kinesis
-		send_to_kinesis(version, source_id, data, account_id);
+		//1. Parse the data
+		var parsed_data = parse_data(version, source_id, data, account_id);
+		if ( (parsed_data != null) && (parsed_data.length > 0) ) {
+			//2. Update Firebase with the location
+			send_to_firebase(source_id, parsed_data, account_id);
+			//3. Send to Kinesis
+			send_to_kinesis(source_id, parsed_data);
+		}
 		res.status(200).end();
 	} else 
   		res.status(400).end();
@@ -65,8 +69,7 @@ router.get('/:version/:source_id', function(req, res) {
 module.exports = router;
 
 //Functions
-function send_to_kinesis(version, source_id, data, account_id) {
-	var parsed_data = parse_data(version, source_id, data, account_id);
+function send_to_kinesis(source_id, parsed_data) {
 	var params = {
 	  Data: JSON.stringify(parsed_data), 
 	  PartitionKey: source_id,
@@ -74,7 +77,7 @@ function send_to_kinesis(version, source_id, data, account_id) {
 	};
 	kinesis.putRecord(params, function(err, data) {
 	  if (err) console.log(err, err.stack); // an error occurred
-	  else     console.log(data);           // successful response
+	  //else     console.log(data);           // successful response
 	});
 };
 
@@ -132,16 +135,13 @@ function convert_location(latitude, longitude){
 	return [lat, lon];
 };
 
-function send_to_firebase(version, source_id, data, account_id) {
-	var parsed_data = parse_data(version, source_id, data);
+function send_to_firebase(source_id, parsed_data, account_id) {
 	//Take the last element in parsed data and update f/b
-	if(parsed_data.length > 0) {
-		var recent_location = parsed_data[parsed_data.length - 1];
-		var live_car = firebase_ref.child('/accounts/' + account_id + '/livecars/' + source_id);
-		live_car.update({
-			'latitude': recent_location.lat,
-			'longitude': recent_location.long,
-			'locationTime': recent_location.time,
-		});
-	}
+	var recent_location = parsed_data[parsed_data.length - 1];
+	var live_car = firebase_ref.child('/accounts/' + account_id + '/livecars/' + source_id);
+	live_car.update({
+		'latitude': recent_location.lat,
+		'longitude': recent_location.long,
+		'locationTime': recent_location.time,
+	});
 };

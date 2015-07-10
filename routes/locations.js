@@ -156,6 +156,6 @@ function send_to_firebase(source_id, parsed_data, account_id) {
 	live_car.update({
 		'latitude': recent_location.lat,
 		'longitude': recent_location.long,
-		'locationTime': recent_location.time,
+		'locationtime': recent_location.time,
 	});
 };

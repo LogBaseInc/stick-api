@@ -19,7 +19,7 @@ Send Location API:
 
 GET /api/locations/{version}/{source_id}?data={content}&token={token}
 
-	version - Get info from the device, currently version = d1.
+	version - Get info from the device, currently version = d1 (device) and m1 (mobile).
 
 	source_id - Device ID.
 

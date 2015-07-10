@@ -84,11 +84,10 @@ function send_to_kinesis(source_id, parsed_data) {
 //Parse data according to the version
 function parse_data(version, source_id, data, account_id) {
 	console.log('Raw data: ' + data + ', version: ' + version);
-	var parsed_data;
+	var parsed_data = [];
 	if(version === 'd1') {
 		data = data.substring(0, data.length - 1);
 		var events = data.split('$');
-		parsed_data = [];
 		for(var i in events) {
 			var fields = events[i].split(',');
 			var ts_input = fields[4];
@@ -103,12 +102,27 @@ function parse_data(version, source_id, data, account_id) {
 					lat: latlong[0],
 					long: latlong[1],
 					time: Date.parse(ts),
-					speed: parseFloat(fields[7])
+					speed: parseFloat(fields[7]),
+					accuracy: 0
 				};
 				parsed_data.push(location_event);
 			}
 		}
 		console.log('Parsed Data: ' + JSON.stringify(parsed_data));
+	} else if (version==='m1') {
+		var dataJson = JSON.parse(data);
+		if(dataJson.accuracy < 30) { //Consider only if reasonably accurate
+			location_event = {
+				source_id: source_id,
+				account_id: account_id,
+				lat: dataJson.latitude,
+				long: dataJson.longitude,
+				time: dataJson.timestamp,
+				speed: dataJson.speed,
+				accuracy: dataJson.accuracy
+			};
+			parsed_data.push(location_event);
+		}
 	} else
 		console.log('Source version not recognized');
 	return parsed_data;

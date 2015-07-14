@@ -111,7 +111,7 @@ function parse_data(version, source_id, data, account_id) {
 		console.log('Parsed Data: ' + JSON.stringify(parsed_data));
 	} else if (version==='m1') {
 		var dataJson = JSON.parse(data);
-		if(dataJson.accuracy < 30) { //Consider only if reasonably accurate
+		//if(dataJson.accuracy < 30) { //Consider only if reasonably accurate
 			location_event = {
 				source_id: source_id,
 				account_id: account_id,
@@ -122,7 +122,7 @@ function parse_data(version, source_id, data, account_id) {
 				accuracy: dataJson.accuracy
 			};
 			parsed_data.push(location_event);
-		}
+		//}
 	} else
 		console.log('Source version not recognized');
 	return parsed_data;
@@ -157,5 +157,7 @@ function send_to_firebase(source_id, parsed_data, account_id) {
 		'latitude': recent_location.lat,
 		'longitude': recent_location.long,
 		'locationtime': recent_location.time,
+		'speed': recent_location.speed,
+		'accuracy': recent_location.accuracy
 	});
 };

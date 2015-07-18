@@ -6,6 +6,16 @@ var kinesis = new AWS.Kinesis();
 var kinesis_stream = 'stick-locations';
 var Firebase = require("firebase");
 var firebase_ref = new Firebase("https://logbasedev.firebaseio.com");
+var nmea = require('nmea');
+
+var loggly = require('loggly');
+
+var client = loggly.createClient({
+    token: "7b9f6d3d-01ed-45c5-b4ed-e8d627764998",
+    subdomain: "kousik",
+    tags: ["NodeJS"],
+    json:true
+});
 
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;
@@ -123,7 +133,47 @@ function parse_data(version, source_id, data, account_id) {
 			};
 			parsed_data.push(location_event);
 		//}
-	} else
+	} else if (version === "d2") {
+        // logging to loggly
+        client.log(data, [source_id, account_id]);
+        var events = data.split('$');
+        var accuracy_detected = false;
+        var accuracy = 0;
+        for (var ent in events) {
+            var event = "$" + events[ent];
+            if (event.length > 1) {
+                try {
+                    var parsed_nmea = (nmea.parse(event));
+                } catch(err) {
+                    console.log(err);
+                    continue;
+                }
+                if (parsed_nmea.sentence === "GGA" && parsed_nmea.fixType === "fix") {
+                    accuracy = parsed_nmea.horDilution;
+                    accuracy_detected = true;
+                }
+                if (parsed_nmea.sentence === "RMC" && accuracy_detected) {
+                    var latlong = convert_location(parseFloat(parsed_nmea.lat), parseFloat(parsed_nmea.lon));
+                    var match1 = /^(\d{2})(\d{2})(\d{2})$/.exec(parsed_nmea.date);
+                    var match2 = /^(\d{2})(\d{2})(\d{2}).(\d{2})$/.exec(parsed_nmea.timestamp);
+                    var ts = "20" + match1[3] + '-' + match1[2] + '-' + match1[1] + ' ' +
+                        match2[1] + ':' + match2[2] + ':' + match2[3] + '.' + match2[4];
+                    var speed = parseFloat(parsed_nmea.speedKnots) * 0.514444;
+                    var location_event = {
+                        source_id: source_id,
+                        account_id: account_id,
+                        lat: latlong[0],
+                        long: latlong[1],
+                        time: Date.parse(ts),
+                        speed: speed,
+                        accuracy: accuracy
+                    }
+                    client.log(location_event, [source_id, account_id, "location_data"])
+                    parsed_data.push(location_event);
+                }
+            }
+        }
+    } else
 		console.log('Source version not recognized');
 	return parsed_data;
 };

@@ -1,7 +1,7 @@
 var express = require('express');
 var app = express();
 
-var port = process.env.STICK_API_PORT || 3000;
+var port = process.env.PORT || process.env.STICK_API_PORT || 3000;
 
 //Routes
 var locations = require('./routes/locations');

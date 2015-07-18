@@ -15,6 +15,8 @@
   "dependencies": {
     "aws-sdk": "^2.1.36",
     "express": "^4.13.0",
-    "firebase": "^2.2.7"
+    "firebase": "^2.2.7",
+    "loggly": "^1.0.8",
+    "nmea": "0.0.9"
   }
 }

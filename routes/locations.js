@@ -148,6 +148,14 @@ function parse_data(version, source_id, data, account_id) {
                     console.log(err);
                     continue;
                 }
+
+                // Debug metrics
+                if (parsed_nmea.sentence == "GGA"){
+                    var debug_met = {
+                        num_satellites: parsed_nmea.numSat
+                    }
+                    client.log(debug_met, [account_id, source_id, "debug"])
+                }
                 if (parsed_nmea.sentence === "GGA" && parsed_nmea.fixType === "fix") {
                     accuracy = parsed_nmea.horDilution;
                     accuracy_detected = true;

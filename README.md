@@ -13,6 +13,10 @@ AWS_SECRET_ACCESS_KEY
 
 FIREBASE_SECRET
 
+LOGGLY_TOKEN
+
+LOGGLY_SUB_DOMAIN
+
 =============================
 
 Send Location API:

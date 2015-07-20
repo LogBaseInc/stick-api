@@ -9,11 +9,13 @@ var firebase_ref = new Firebase("https://logbasedev.firebaseio.com");
 var nmea = require('nmea');
 
 var loggly = require('loggly');
+var loggly_token = process.env.LOGGLY_TOKEN || "7b9f6d3d-01ed-45c5-b4ed-e8d627764998";
+var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN || "kousik"
 
 var client = loggly.createClient({
-    token: "7b9f6d3d-01ed-45c5-b4ed-e8d627764998",
-    subdomain: "kousik",
-    tags: ["NodeJS"],
+    token: loggly_token,
+    subdomain: loggly_sub_domain,
+    tags: ["stick"],
     json:true
 });
 
@@ -135,7 +137,7 @@ function parse_data(version, source_id, data, account_id) {
 		//}
 	} else if (version === "d2") {
         // logging to loggly
-        client.log(data, [source_id, account_id]);
+        client.log(data, [source_id, account_id, "d2"]);
         var events = data.split('$');
         var accuracy_detected = false;
         var accuracy = 0;
@@ -154,7 +156,7 @@ function parse_data(version, source_id, data, account_id) {
                     var debug_met = {
                         num_satellites: parsed_nmea.numSat
                     }
-                    client.log(debug_met, [account_id, source_id, "debug"])
+                    client.log(debug_met, [account_id, source_id, "debug", "d2"])
                 }
                 if (parsed_nmea.sentence === "GGA" && parsed_nmea.fixType === "fix") {
                     accuracy = parsed_nmea.horDilution;
@@ -176,7 +178,7 @@ function parse_data(version, source_id, data, account_id) {
                         speed: speed,
                         accuracy: accuracy
                     }
-                    client.log(location_event, [source_id, account_id, "location_data"])
+                    client.log(location_event, [source_id, account_id, "location_data" , "d2"])
                     parsed_data.push(location_event);
                 }
             }

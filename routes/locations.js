@@ -159,9 +159,12 @@ function parse_data(version, source_id, data, account_id) {
                     client.log(debug_met, [account_id, source_id, "debug", "d2"])
                 }
                 if (parsed_nmea.sentence === "GGA" && parsed_nmea.fixType === "fix") {
+                	var debug_met = {
+                	fix: 1	
+                    }
                     accuracy = parsed_nmea.horDilution;
                     accuracy_detected = true;
-                    client.log("Fix", [account_id, source_id, "debug", "d2", "fix"])
+                    client.log(debug_met, [account_id, source_id, "debug", "d2", "fix"])
 
                 }
                 if (parsed_nmea.sentence === "RMC" && accuracy_detected) {

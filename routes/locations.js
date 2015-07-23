@@ -161,6 +161,8 @@ function parse_data(version, source_id, data, account_id) {
                 if (parsed_nmea.sentence === "GGA" && parsed_nmea.fixType === "fix") {
                     accuracy = parsed_nmea.horDilution;
                     accuracy_detected = true;
+                    client.log("Fix", [account_id, source_id, "debug", "d2", "fix"])
+
                 }
                 if (parsed_nmea.sentence === "RMC" && accuracy_detected) {
                     var latlong = convert_location(parseFloat(parsed_nmea.lat), parseFloat(parsed_nmea.lon));

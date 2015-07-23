@@ -170,7 +170,7 @@ function parse_data(version, source_id, data, account_id) {
                 if (parsed_nmea.sentence === "RMC" && accuracy_detected) {
                     var latlong = convert_location(parseFloat(parsed_nmea.lat), parseFloat(parsed_nmea.lon));
                     var match1 = /^(\d{2})(\d{2})(\d{2})$/.exec(parsed_nmea.date);
-                    var match2 = /^(\d{2})(\d{2})(\d{2}).(\d{2})$/.exec(parsed_nmea.timestamp);
+                    var match2 = /^(\d{2})(\d{2})(\d{2}).(\d*)$/.exec(parsed_nmea.timestamp);
                     var ts = "20" + match1[3] + '-' + match1[2] + '-' + match1[1] + ' ' +
                         match2[1] + ':' + match2[2] + ':' + match2[3] + '.' + match2[4];
                     var speed = parseFloat(parsed_nmea.speedKnots) * 0.514444;

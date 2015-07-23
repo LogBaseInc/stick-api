@@ -23,8 +23,9 @@ module.exports = router;
 //Functions
 function send_to_kinesis(version, source_id, data) {
 	console.log('Received event: ' + version + '|' + source_id + '|' + data);
+	var generic_event = {type: 'generic', data: data};
 	var params = {
-	  Data: data, 
+	  Data: JSON.stringify(generic_event),
 	  PartitionKey: source_id,
 	  StreamName: kinesis_stream, 
 	};

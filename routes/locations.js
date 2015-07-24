@@ -148,6 +148,26 @@ function parse_data(version, source_id, data, account_id) {
                     var parsed_nmea = (nmea.parse(event));
                 } catch(err) {
                     console.log(err);
+                    if(event[1] === "0") {
+                        var gsm_event = event.split(',');
+                        var long = gsm_event[1];
+                        var lat = gsm_event[2];
+                        var dte = gsm_event[3];
+                        var tme = gsm_event[4];
+                        console.log(long, lat, dte, tme);
+                        console.log(Date.parse(dte + " " + tme));
+                        var location_event = {
+                            source_id: "hardware3",
+                            account_id: account_id,
+                            lat: lat,
+                            long: long,
+                            time: Date.parse(dte + " " + tme),
+                            speed: 10,
+                            accuracy: 1
+                        }
+                        parsed_data.push(location_event);
+                        console.log(location_event);
+                    }
                     continue;
                 }
 

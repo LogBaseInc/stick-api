@@ -157,7 +157,7 @@ function parse_data(version, source_id, data, account_id) {
                         console.log(long, lat, dte, tme);
                         console.log(Date.parse(dte + " " + tme));
                         var location_event = {
-                            source_id: "hardware3",
+                            source_id: source_id+"_gsm",
                             account_id: account_id,
                             lat: lat,
                             long: long,

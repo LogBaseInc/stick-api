@@ -237,7 +237,7 @@ function convert_location(latitude, longitude){
 function send_to_firebase(source_id, parsed_data, account_id) {
 	//Take the last element in parsed data and update f/b
 	var recent_location = parsed_data[parsed_data.length - 1];
-	var live_car = firebase_ref.child('/accounts/' + account_id + '/livecars/' + source_id);
+	var live_car = firebase_ref.child('/accounts/' + account_id + '/livecars/' + recent_location.source_id);
 	live_car.update({
 		'latitude': recent_location.lat,
 		'longitude': recent_location.long,

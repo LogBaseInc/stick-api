@@ -3,9 +3,9 @@ var router = express.Router();
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 var kinesis = new AWS.Kinesis();
-var kinesis_stream = 'stick-events';
+var kinesis_stream = process.env.EVENTS_STREAM;
 var Firebase = require("firebase");
-var firebase_ref = new Firebase("https://logbasedev.firebaseio.com");
+var firebase_ref = new Firebase(process.env.FIREBASE_URL);
 
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;

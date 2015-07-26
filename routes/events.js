@@ -3,7 +3,7 @@ var router = express.Router();
 var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 var kinesis = new AWS.Kinesis();
-var kinesis_stream = 'stick-events';
+var kinesis_stream = process.env.EVENTS_STREAM;
 
 // define the home page route
 router.get('/:version/:source_id', function(req, res) {

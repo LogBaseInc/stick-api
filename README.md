@@ -17,6 +17,12 @@ LOGGLY_TOKEN
 
 LOGGLY_SUB_DOMAIN
 
+LOCATIONS_STREAM
+
+EVENTS_STREAM
+
+FIREBASE_URL
+
 =============================
 
 Send Location API:

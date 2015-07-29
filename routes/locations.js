@@ -68,6 +68,7 @@ router.post('/:version/:source_id', function(req, res) {
     var version = req.params.version;
     var source_id = req.params.source_id;
     var data = req.body;
+    console.log(data);
     process_events(source_id, version, data, res);
 });
 

@@ -1,7 +1,9 @@
 var express = require('express');
 var app = express();
+var bodyParser = require('body-parser');
 
 var port = process.env.PORT || process.env.STICK_API_PORT || 3000;
+app.use(bodyParser.text(limit=2048));
 
 //Routes
 var locations = require('./routes/locations');

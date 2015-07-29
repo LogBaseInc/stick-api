@@ -61,31 +61,40 @@ router.get('/:version/:source_id', function(req, res) {
 	var source_id = req.params.source_id;
 	var data = req.query.data;
 	var token = req.query.token;
-	//TODO Authenticate token
+    process_events(source_id, version, data, res);
+});
 
-	var account_id = device_cache[source_id];
-	if(account_id != null) {
-		//1. Parse the data
-		var parsed_data = parse_data(version, source_id, data, account_id);
-		if ( (parsed_data != null) && (parsed_data.length > 0) ) {
-			//2. Update Firebase with the location
-			send_to_firebase(source_id, parsed_data, account_id);
-			//3. Send to Kinesis
-			send_to_kinesis(source_id, parsed_data);
-		}
-		res.status(200).end();
-	} else 
-  		res.status(400).end();
+router.post('/:version/:source_id', function(req, res) {
+    var version = req.params.version;
+    var source_id = req.params.source_id;
+    var data = req.body;
+    process_events(source_id, version, data, res);
 });
 
 module.exports = router;
 
 //Functions
+function process_events(source_id, version, data, res) {
+    //TODO Authenticate token
+    var account_id = device_cache[source_id];
+    if(account_id != null) {
+        //1. Parse the data
+        var parsed_data = parse_data(version, source_id, data, account_id);
+        if ( (parsed_data != null) && (parsed_data.length > 0) ) {
+            //2. Update Firebase with the location
+            send_to_firebase(source_id, parsed_data, account_id);
+            //3. Send to Kinesis
+            send_to_kinesis(source_id, parsed_data);
+        }
+        res.status(200).end();
+    } else
+        res.status(400).end();
+}
 function send_to_kinesis(source_id, parsed_data) {
 	var params = {
 	  Data: JSON.stringify(parsed_data), 
 	  PartitionKey: source_id,
-	  StreamName: kinesis_stream, 
+	  StreamName: kinesis_stream
 	};
 	kinesis.putRecord(params, function(err, data) {
 	  if (err) console.log(err, err.stack); // an error occurred
@@ -167,6 +176,7 @@ function parse_data(version, source_id, data, account_id) {
                         }
                         parsed_data.push(location_event);
                         console.log(location_event);
+                        client.log(location_event, [source_id, account_id, "location_data_gsm" , "d2"])
                     }
                     continue;
                 }

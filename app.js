@@ -16,5 +16,8 @@ app.use('/api/events', events);
 var alerts = require('./routes/alerts');
 app.use('/api/alerts', alerts);
 
+var assistnow = require('./routes/assistnow');
+app.use('/api/assist', assistnow);
+
 app.listen(port);
 console.log('Stick App listening on port 3000');

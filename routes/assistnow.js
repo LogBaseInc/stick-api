@@ -15,7 +15,7 @@ router.get('/:token/:gnss/:datatype/:lat/:lon/:pacc', function(req, res) {
     //url = 'http://online-live1.services.u-blox.com?token=' + token + ';gnss=' + gnss + ';datatype=' + datatype +
         //';lat=' + lat + ';lon=' + lon + ';pacc=' + pacc;
     url = 'http://online-live1.services.u-blox.com/GetOnlineData.ashx?token=6NJ2C2z0iEyw9vth6Le_YA;' +
-        'gnss=gps,qzss;datatype=eph,aux,pos;lat=11.020000;lon=77.000000;alt=0.000000;pacc=1000.000000'
+        'gnss=gps,qzss;datatype=eph,aux,pos;lat=11.112053;lon=77.028011;alt=0.000000;pacc=1000.000000'
     console.log(url);
     var buffer = null;
     var request = http.get(url, function(response) {

@@ -19,8 +19,10 @@ router.get('/:lat/:lon/:version/:source_id', function(req, res) {
     var lon = req.params.lon;
     var source_id = req.params.source_id
 
+    //gnss=gps,glo,qzss;datatype=eph,alm,aux,pos;
+
     url = 'http://online-live1.services.u-blox.com/GetOnlineData.ashx?token=6NJ2C2z0iEyw9vth6Le_YA;' +
-        'gnss=gps,qzss;datatype=eph,aux,pos;lat=' + lat + ';lon=' + lon + ';alt=0.000000;pacc=1000.000000';
+        'gnss=gps,qzss,glo;datatype=eph,aux,pos;lat=' + lat + ';lon=' + lon + ';alt=0.000000;pacc=1000.000000';
     console.log(url);
     client.log({"url" : url}, ["debug", "assistnow", source_id]);
     var buffer = null;

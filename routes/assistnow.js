@@ -22,7 +22,7 @@ router.get('/:lat/:lon/:version/:source_id', function(req, res) {
     url = 'http://online-live1.services.u-blox.com/GetOnlineData.ashx?token=6NJ2C2z0iEyw9vth6Le_YA;' +
         'gnss=gps,qzss;datatype=eph,aux,pos;lat=' + lat + ';lon=' + lon + ';alt=0.000000;pacc=1000.000000';
     console.log(url);
-    client.log(data, ["debug", "assistnow", source_id]);
+    client.log({"url" : url}, ["debug", "assistnow", source_id]);
     var buffer = null;
     var request = http.get(url, function(response) {
         if (response.statusCode === 200) {

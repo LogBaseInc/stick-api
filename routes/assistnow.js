@@ -3,19 +3,15 @@ var router = express.Router();
 var http = require('http');
 var fs = require('fs');
 
-router.get('/:token/:gnss/:datatype/:lat/:lon/:pacc', function(req, res) {
-    var token = req.params.token;
-    var gnss = req.params.gnss;
-    var datatype = req.params.datatype;
+router.get('/:lat/:lon', function(req, res) {
     var lat = req.params.lat;
     var lon = req.params.lon;
-    var pacc = req.params.pacc;
 
     console.log(token, gnss, datatype, lat, lon, pacc);
     //url = 'http://online-live1.services.u-blox.com?token=' + token + ';gnss=' + gnss + ';datatype=' + datatype +
         //';lat=' + lat + ';lon=' + lon + ';pacc=' + pacc;
     url = 'http://online-live1.services.u-blox.com/GetOnlineData.ashx?token=6NJ2C2z0iEyw9vth6Le_YA;' +
-        'gnss=gps,qzss;datatype=eph,aux,pos;lat=11.024055;lon=77.001488;alt=0.000000;pacc=1000.000000'
+        'gnss=gps,qzss;datatype=eph,aux,pos;lat=' + lat + ';lon=' + lon + ';alt=0.000000;pacc=1000.000000';
     console.log(url);
     var buffer = null;
     var request = http.get(url, function(response) {

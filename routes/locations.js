@@ -144,9 +144,9 @@ function parse_data(version, source_id, data, account_id) {
 			};
 			parsed_data.push(location_event);
 		//}
-	} else if (version === "d2") {
+	} else if (version === "d2" || version === "d3") {
         // logging to loggly
-        client.log(data, [source_id, account_id, "d2"]);
+        client.log(data, [source_id, account_id, version]);
         var events = data.split('$');
         var accuracy_detected = false;
         var accuracy = 0;
@@ -176,7 +176,7 @@ function parse_data(version, source_id, data, account_id) {
                         }
                         parsed_data.push(location_event);
                         console.log(location_event);
-                        client.log(location_event, [source_id, account_id, "location_data_gsm" , "d2"])
+                        client.log(location_event, [source_id, account_id, "location_data_gsm" , version])
                     }
                     continue;
                 }
@@ -194,7 +194,7 @@ function parse_data(version, source_id, data, account_id) {
                     }
                     accuracy = parsed_nmea.horDilution;
                     accuracy_detected = true;
-                    client.log(debug_met, [account_id, source_id, "debug", "d2", "fix"])
+                    client.log(debug_met, [account_id, source_id, "debug", version, "fix"])
 
                 }
                 if (parsed_nmea.sentence === "RMC" && accuracy_detected) {
@@ -213,7 +213,7 @@ function parse_data(version, source_id, data, account_id) {
                         speed: speed,
                         accuracy: accuracy
                     }
-                    client.log(location_event, [source_id, account_id, "location_data" , "d2"])
+                    client.log(location_event, [source_id, account_id, "location_data" , version])
                     parsed_data.push(location_event);
                 }
             }

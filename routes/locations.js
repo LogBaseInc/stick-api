@@ -104,7 +104,8 @@ function send_to_kinesis(source_id, parsed_data) {
 
 //Parse data according to the version
 function parse_data(version, source_id, data, account_id) {
-	console.log('Raw data: ' + data + ', version: ' + version);
+    client.log(data, [source_id, account_id, version]);
+	//console.log('Raw data: ' + data + ', version: ' + version);
 	var parsed_data = [];
 	if(version === 'd1') {
 		data = data.substring(0, data.length - 1);

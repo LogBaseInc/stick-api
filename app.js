@@ -5,6 +5,7 @@ var bodyParser = require('body-parser');
 var port = process.env.PORT || process.env.STICK_API_PORT || 3000;
 app.use(bodyParser.text(limit=2048));
 app.use(bodyParser.raw(limit=2048));
+app.use(bodyParser.json());
 
 //Routes
 var locations = require('./routes/locations');
@@ -18,6 +19,9 @@ app.use('/api/alerts', alerts);
 
 var assistnow = require('./routes/assistnow');
 app.use('/api/assist', assistnow);
+
+var orders = require('./routes/orders');
+app.use('/api/orders', orders);
 
 app.listen(port);
 console.log('Stick App listening on port 3000');

@@ -226,6 +226,10 @@ function daily_api_usage_limit_reached(token) {
         return false;
     }
 
+    if (dateIndex != orderCount.date) {
+        return false;
+    }
+    
     if (orderCount.count < API_USAGE_LIMIT_PER_DAY) {
         return false;
     }

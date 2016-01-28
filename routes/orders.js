@@ -71,6 +71,7 @@ router.post('/:token', function (req, res) {
     var product_name = req.body.product_name || "";
     var product_desc = req.body.product_desc || "";
     var notes = req.body.notes || "";
+    var tags = req.body.tags || "";
 
     /*
      * Parse date and delivery slots
@@ -156,10 +157,12 @@ router.post('/:token', function (req, res) {
         ordernumber: order_id,
         productdesc: product_desc,
         productname: product_name,
-        time: slot.time_slot
+        time: slot.time_slot,
+        tags: tags
     }
 
 
+    console.log(order_details);
     /*
      * Get the firebase ref and update
      */
@@ -179,13 +182,13 @@ function parse_delivery_time(start_time, end_time) {
         time_slot: null
     }
 
-    if (start < 0 || start > 24) {
+    if (start < 0 || start > 23) {
         resp.success = false;
-        resp.message = "Invalid delivery start time. Expected values 0 to 24";
+        resp.message = "Invalid delivery start time. Expected values 0 to 23";
         return resp;
     }
 
-    if (end < 0 || end > 23) {
+    if (end < 0 || end > 24) {
         resp.success = false;
         resp.message = "Invalid delivery end time. Expected values 0 to 24";
         return resp;
@@ -206,7 +209,9 @@ function parse_delivery_time(start_time, end_time) {
         start = start + ":00 AM";
     }
 
-    if (end > 12) {
+    if (end == 24) {
+        end = "11:59 PM";
+    } else if (end > 12) {
         end = end - 12 + ":00 PM";
     } else if (end == 12) {
         end = end + ":00 PM";
@@ -229,7 +234,7 @@ function daily_api_usage_limit_reached(token) {
     if (dateIndex != orderCount.date) {
         return false;
     }
-    
+
     if (orderCount.count < API_USAGE_LIMIT_PER_DAY) {
         return false;
     }

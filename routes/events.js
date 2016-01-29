@@ -44,6 +44,7 @@ router.post('/app', function(req, res) {
     var activity_date = new Date(time_ms);
 
     console.log(activity_date);
+    console.log(hook_url);
     if (activity_date == null || activity_date == undefined || activity_date == "Invalid Date") {
         res.status(400).send("Invalid time_ms");
     }
@@ -99,7 +100,7 @@ function post_to_web_hook(order_id, account_id, hook_url, date, activity, time_m
 
                     function callback(error, response, body) {
                         // Handle failure cases
-                        console.log("Status " + response.statusCode);
+//                        console.log("Status " + response.statusCode);
                     }
                     request(options, callback);
 

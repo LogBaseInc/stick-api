@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var AWS = require('aws-sdk');
+var request = require('request');
 AWS.config.update({region: 'us-east-1'});
 var kinesis = new AWS.Kinesis();
 var kinesis_stream = process.env.EVENTS_STREAM;
@@ -78,8 +79,31 @@ function post_to_web_hook(order_id, account_id, hook_url, date, activity, time_m
             var activity_details = {
                 order : order_details,
                 activity : activity,
-                time: time_ms
+                time_ms: time_ms
             }
+
+            firebase_ref.child('/accounts/'+ account_id + '/settings/token/id')
+                .once("value", function(snapshot){
+                    var token = snapshot.val();
+                    activity_details['token'] = token;
+
+                    var options = {
+                        url: hook_url,
+                        method: "POST",
+                        headers: {
+                            'Content-Type' : 'application/json'
+                        },
+                        json: true,
+                        body : activity_details
+                    };
+
+                    function callback(error, response, body) {
+                        // Handle failure cases
+                        console.log("Status " + response.statusCode);
+                    }
+                    request(options, callback);
+
+                }) ;
             console.log(activity_details);
     });
 }

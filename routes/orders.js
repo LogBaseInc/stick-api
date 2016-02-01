@@ -72,6 +72,7 @@ router.post('/:token', function (req, res) {
     var product_desc = req.body.product_desc || "";
     var notes = req.body.notes || "";
     var tags = req.body.tags || "";
+    var url = req.body.url || "";
 
     /*
      * Parse date and delivery slots
@@ -158,7 +159,8 @@ router.post('/:token', function (req, res) {
         productdesc: product_desc,
         productname: product_name,
         time: slot.time_slot,
-        tags: tags
+        tags: tags,
+        url: url
     }
 
 

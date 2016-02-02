@@ -77,6 +77,11 @@ router.post('/:token', function (req, res) {
     /*
      * Parse date and delivery slots
      */
+    if (delivery_date == null || delivery_date == undefined) {
+        res.status(400).send("Delivery date is mandatory");
+        return;
+    }
+
     var date = Date.parse(delivery_date);
     if (date == null) {
         res.status(400).send("Incorrect date format. Expected format - yyyy/mm/dd");
@@ -172,6 +177,81 @@ router.post('/:token', function (req, res) {
     order_ref.update(order_details);
 
     res.status(200).send();
+});
+
+router.delete("/:token", function(req, res){
+    var token = req.params.token || " ";
+    var order_id = req.body.order_id;
+    var delivery_date = req.body.delivery_date;
+
+    /*
+     * Parse date
+     */
+    if (delivery_date == null || delivery_date == undefined) {
+        res.status(400).send("Delivery date is mandatory");
+        return;
+    }
+
+    var date = Date.parse(delivery_date);
+    if (date == null) {
+        res.status(400).send("Incorrect date format. Expected format - yyyy/mm/dd");
+        return;
+    }
+    var formatted_date = date.toString("yyyyMMdd");
+
+    /*
+     * Validate mandatory fields
+     */
+    if (order_id == null || order_id == undefined) {
+        res.status(400).send("Order id is mandatory");
+        return;
+    }
+
+    /*
+     * Validate token
+     */
+    if (tokens_cache[token] == null || tokens_cache[token] == undefined) {
+        res.status(400).send("Invalid token");
+        return;
+    }
+
+    var account_id = tokens_cache[token].accountId;
+    if (account_id == null || account_id == undefined) {
+        res.status(400).send("Invalid token");
+        return;
+    }
+
+    firebase_ref.child('/accounts/' + account_id + '/unassignorders/')
+        .once("value", function(snapshot) {
+            var orders = snapshot.val();
+            if (orders == null) {
+                res.status(400).send("No orders found");
+                return;
+            }
+
+            for (var date in orders) {
+                if (date == formatted_date) {
+                    for (var id in orders[date]) {
+                        if (id == order_id) {
+                            for (var fields in orders[date][id]) {
+                                if (fields == "deviceid") {
+                                    res.status(400).send("User is assigned to the order. " +
+                                        "Please unassign the user and delete the order");
+                                    return;
+                                }
+                            }
+                            firebase_ref.child('/accounts/' + account_id + '/unassignorders/' + formatted_date + "/" + order_id)
+                                .set(null);
+                            res.status(200).end();
+                            return;
+                        }
+                    }
+                }
+            }
+            res.status(400).send("Order not found");
+            return;
+
+        });
 });
 
 function parse_delivery_time(start_time, end_time) {

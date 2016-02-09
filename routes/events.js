@@ -9,6 +9,18 @@ var Firebase = require("firebase");
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
 require("datejs");
 
+var loggly = require('loggly');
+var loggly_token = process.env.LOGGLY_TOKEN || "7b9f6d3d-01ed-45c5-b4ed-e8d627764998";
+var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN || "kousik"
+
+var client = loggly.createClient({
+    token: loggly_token,
+    subdomain: loggly_sub_domain,
+    tags: ["stick"],
+    json:true
+});
+
+
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;
 firebase_ref.authWithCustomToken(firebase_secret, function(error, authData) {
@@ -43,11 +55,14 @@ router.post('/app', function(req, res) {
     var time_ms = req.body.time_ms;
     var activity_date = new Date(time_ms);
 
+    client.log(req.body, ["events"]);
+
     console.log(activity_date);
     console.log(hook_url);
     if (activity_date == null || activity_date == undefined || activity_date == "Invalid Date") {
         res.status(400).send("Invalid time_ms");
     }
+
 
     post_to_web_hook(order_id, account_id, hook_url, date, activity, time_ms);
     res.status(200).end();
@@ -101,6 +116,7 @@ function post_to_web_hook(order_id, account_id, hook_url, date, activity, time_m
                     function callback(error, response, body) {
                         // Handle failure cases
 //                        console.log("Status " + response.statusCode);
+                        client.log(activity_details, [response.statusCode, "status", "events"]);
                     }
                     request(options, callback);
 

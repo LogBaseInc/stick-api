@@ -4,7 +4,7 @@ var Firebase = require("firebase");
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
 require("datejs");
 
-var API_USAGE_LIMIT_PER_DAY = 100;
+var API_USAGE_LIMIT_PER_DAY = 200;
 
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;

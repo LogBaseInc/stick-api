@@ -150,6 +150,8 @@ router.post('/:token', function (req, res) {
 
     incrementApiCount(token);
 
+   var ts = new Date().getTime();
+
     /*
      * Fill in the order to update
      */
@@ -165,7 +167,8 @@ router.post('/:token', function (req, res) {
         productname: product_name,
         time: slot.time_slot,
         tags: tags,
-        url: url
+        url: url,
+        createdat:ts
     }
 
 

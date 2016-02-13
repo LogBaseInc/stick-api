@@ -23,5 +23,8 @@ app.use('/api/assist', assistnow);
 var orders = require('./routes/orders');
 app.use('/api/orders', orders);
 
+var customers = require('./routes/customers');
+app.use('/api/customers', customers);
+
 app.listen(port);
 console.log('Stick App listening on port 3000');

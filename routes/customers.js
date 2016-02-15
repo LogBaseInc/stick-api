@@ -4,6 +4,12 @@ var AWS = require('aws-sdk');
 AWS.config.update({region: 'us-east-1'});
 
 
+router.get('/mobilenos/:accountid/', function(req, res){
+    var mobileNumbers = ["9901651997", "9886165860", "9994160330", "9677666498", "9942752200"];
+    res.status(200).send(mobileNumbers);
+});
+
+
 router.get('/:accountid/:mobile', function(req, res){
     var customer = {
         "name" : "Kousik Kumar Gopalan",

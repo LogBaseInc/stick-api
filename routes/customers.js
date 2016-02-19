@@ -7,8 +7,8 @@ var DYNAMODB_CUSTOMER_TABLE_NAME = "StickCustomers";
 var dynamodb = new AWS.DynamoDB({apiVersion: 'latest'});
 
 var loggly = require('loggly');
-var loggly_token = process.env.LOGGLY_TOKEN;
-var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN;
+var loggly_token = process.env.LOGGLY_TOKEN || "7b9f6d3d-01ed-45c5-b4ed-e8d627764998";
+var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN || "kousik"
 
 var client = loggly.createClient({
     token: loggly_token,

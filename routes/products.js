@@ -35,7 +35,6 @@ router.get('/:accountid', function(req, res){
     var account_id = req.params.accountid || " ";
     var resp_data = [];
     var prev_result = null;
-    console.log(account_id);
 
     if (utils.validateAccountIds(account_id) != true) {
         res.status(400).send("Invalid account id");

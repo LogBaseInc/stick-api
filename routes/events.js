@@ -78,7 +78,7 @@ function send_to_kinesis(version, source_id, data) {
 	var params = {
 	  Data: JSON.stringify(generic_event),
 	  PartitionKey: source_id,
-	  StreamName: kinesis_stream, 
+	  StreamName: kinesis_stream
 	};
 	kinesis.putRecord(params, function(err, data) {
 	  if (err) console.log(err, err.stack); // an error occurred

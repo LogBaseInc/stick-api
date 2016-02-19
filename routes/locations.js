@@ -33,17 +33,17 @@ var device_cache = {};
 var devices_ref = firebase_ref.child('/devices');
 devices_ref.on('child_added', function(snapshot, prevChildKey) {
   var new_entry = snapshot;
-  console.log('Added Device: ' + new_entry.key() + ' Account: ' + new_entry.val());
+  //console.log('Added Device: ' + new_entry.key() + ' Account: ' + new_entry.val());
   device_cache[new_entry.key()] = new_entry.val();
 });
 devices_ref.on('child_changed', function(snapshot) {
   var changed_entry = snapshot;
-  console.log('Updated Device: ' + changed_entry.key() + ' Account: ' + changed_entry.val());
+  //console.log('Updated Device: ' + changed_entry.key() + ' Account: ' + changed_entry.val());
   device_cache[changed_entry.key()] = changed_entry.val();
 });
 devices_ref.on('child_removed', function(snapshot) {
   var removed_entry = snapshot;
-  console.log('Removed Device: ' + removed_entry.key() + ' Account: ' + removed_entry.val());
+  //console.log('Removed Device: ' + removed_entry.key() + ' Account: ' + removed_entry.val());
   delete device_cache[removed_entry.key()];
 });
 

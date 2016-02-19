@@ -7,6 +7,12 @@ app.use(bodyParser.text(limit=2048));
 app.use(bodyParser.raw(limit=2048));
 app.use(bodyParser.json());
 
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
 //Routes
 var locations = require('./routes/locations');
 app.use('/api/locations', locations);
@@ -25,6 +31,9 @@ app.use('/api/orders', orders);
 
 var customers = require('./routes/customers');
 app.use('/api/customers', customers);
+
+var products = require('./routes/products');
+app.use('/api/products', products);
 
 app.listen(port);
 console.log('Stick App listening on port 3000');

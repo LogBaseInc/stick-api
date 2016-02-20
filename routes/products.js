@@ -190,7 +190,7 @@ function fetchProducts(accountId, prevResult, resp_data, res, brief) {
         else {
             if (data != null && data.Items != null) {
                 for (var idx in data.Items) {
-                    resp_data.push(utils.parseDDBJson(data.Items[idx]))
+                    resp_data.push(formatResponse(utils.parseDDBJson(data.Items[idx])))
                 }
             }
 
@@ -222,4 +222,16 @@ function batchWrite(product_list, complete, res) {
             }
         }
     });
+}
+
+function formatResponse(json) {
+    var respJson = {};
+    for (var keys in json) {
+        if (keys == "inventory" || keys == "price") {
+            respJson[keys] = parseFloat(json[keys]);
+        } else {
+            respJson[keys] = json[keys];
+        }
+    }
+    return respJson;
 }

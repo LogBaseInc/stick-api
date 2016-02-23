@@ -148,14 +148,189 @@ router.delete("/:accountid/:uuid", function (req, res) {
     batchWrite([list_items], true, res);
 });
 
+
+router.post("/updateV1/:accountid", function(req, res) {
+    var account_id = req.params.accountid;
+    var items = req.body;
+
+    if (utils.validateAccountIds(account_id) != true) {
+        res.status(400).send("Invalid account id");
+        return;
+    }
+
+    for (var idx in items) {
+        var uuid = items[idx].uuid;
+        var inventory_diff = parseFloat(items[idx].inventory_diff);
+
+        var getParams = {
+            Key: {
+                accountId: {
+                    S: account_id
+                },
+                uuid: {
+                    S: uuid
+                }
+            },
+            TableName: DYNAMODB_PRODUCTS_TABLE_NAME,
+            AttributesToGet: [
+                'inventory'
+            ]
+        }
+
+        dynamodb.getItem(getParams, function(err, data) {
+            if (err) {
+                client.log(err);
+                res.status(400).send(err.message);
+                return;
+            }
+            else {
+                var currentInventory = parseFloat(data.Item.inventory.S);
+                var updateValue = currentInventory + inventory_diff;
+                var updateParams = {
+                    TableName: DYNAMODB_PRODUCTS_TABLE_NAME,
+                    Key: {
+                        "accountId": {"S": account_id},
+                        "uuid": {"S": uuid}
+                    },
+                    UpdateExpression: "SET #key = :value",
+                    ExpressionAttributeNames: {
+                        '#key': "inventory"
+                    },
+                    "ExpressionAttributeValues": {
+                        ':value': {
+                            S: updateValue.toString()
+                        }
+                    }
+                }
+
+                dynamodb.updateItem(updateParams, function(err, data) {
+                    if (err) {
+                        client.log(err);
+                        res.status(400).send(err.message);
+                        return;
+                    } else {
+                        if (idx == items.length - 1) {
+                            res.status(200).send();
+                        }
+                    }
+                });
+            }
+        });
+    }
+    return;
+})
+
+
+router.post("/update/:accountid", function(req, res) {
+    var account_id = req.params.accountid;
+    var items = req.body;
+    var dictItems = {};
+    var keys = [];
+
+    if (utils.validateAccountIds(account_id) != true) {
+        res.status(400).send("Invalid account id");
+        return;
+    }
+
+    var getParams = { "RequestItems" : {} };
+    getParams.RequestItems[DYNAMODB_PRODUCTS_TABLE_NAME] = {};
+    getParams.RequestItems[DYNAMODB_PRODUCTS_TABLE_NAME].Keys = [];
+    getParams.RequestItems[DYNAMODB_PRODUCTS_TABLE_NAME]['AttributesToGet'] = ['inventory', 'uuid'];
+
+    for (var idx in items) {
+        var uuid = items[idx].uuid;
+        var inventory_diff = parseFloat(items[idx].inventory_diff);
+
+        var key = {
+            accountId: {
+                S: account_id
+            },
+            uuid: {
+                S: uuid
+            }
+        }
+        getParams.RequestItems[DYNAMODB_PRODUCTS_TABLE_NAME].Keys.push(key);
+
+        dictItems[items[idx]['uuid']] = parseFloat(items[idx]['inventory_diff']);
+    }
+
+    dynamodb.batchGetItem(getParams, function(err, data) {
+        if (err) {
+            client.log(err);
+            res.status(400).send(err.message)
+            return;
+        } else {
+            if (inventorySanityChecks(dictItems, data.Responses[DYNAMODB_PRODUCTS_TABLE_NAME]) != true) {
+                client.log([req.body, data], ['product_update_error']);
+                res.status(400).send("Some products are out of stock");
+                return;
+            }
+            updateItems(dictItems, data.Responses[DYNAMODB_PRODUCTS_TABLE_NAME], account_id, res);
+        }
+    })
+
+    return;
+})
+
 module.exports = router;
 
 // Functions
+function inventorySanityChecks(reqItems, dbItems) {
+    for (var idx in dbItems) {
+        var inventory_diff = reqItems[dbItems[idx]['uuid']['S']];
+        if (inventory_diff == null || inventory_diff == undefined) {
+            return false;
+        }
+
+        if (inventory_diff < 0 && Math.abs(inventory_diff) > parseFloat(dbItems[idx]['inventory']['S'])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function updateItems(reqItems, dbItems, accountId, res) {
+    for (var idx in dbItems) {
+        console.log(dbItems[idx]);
+        var inventory_diff = reqItems[dbItems[idx]['uuid']['S']];
+        var currentInventory = parseFloat(dbItems[idx].inventory.S);
+        var updateValue = currentInventory + inventory_diff;
+        var updateParams = {
+            TableName: DYNAMODB_PRODUCTS_TABLE_NAME,
+            Key: {
+                "accountId": {"S": accountId},
+                "uuid": {"S": dbItems[idx]['uuid']['S']}
+            },
+            UpdateExpression: "SET #key = :value",
+            ExpressionAttributeNames: {
+                '#key': "inventory"
+            },
+            "ExpressionAttributeValues": {
+                ':value': {
+                    S: updateValue.toString()
+                }
+            }
+        }
+
+        dynamodb.updateItem(updateParams, function(err, data) {
+            if (err) {
+                client.log(err);
+                res.status(400).send(err.message);
+                return;
+            } else {
+                if (idx == dbItems.length - 1) {
+                    res.status(200).send();
+                    return;
+                }
+            }
+        });
+    }
+}
 function fetchProducts(accountId, prevResult, resp_data, res, brief) {
 
     var attributes = [];
     if (brief) {
-        attributes = ['name', 'price']
+        attributes = ['name', 'price', 'inventory', 'uuid']
     } else {
         attributes = ['name', 'price', 'uuid', 'description', 'unit', 'inventory']
     }

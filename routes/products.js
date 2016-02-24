@@ -276,6 +276,11 @@ module.exports = router;
 
 // Functions
 function inventorySanityChecks(reqItems, dbItems) {
+
+    if (dbItems.length == 0) {
+        return false;
+    }
+
     for (var idx in dbItems) {
         var inventory_diff = reqItems[dbItems[idx]['uuid']['S']];
         if (inventory_diff == null || inventory_diff == undefined) {

@@ -78,13 +78,13 @@ router.post('/:token', function (req, res) {
      * Parse date and delivery slots
      */
     if (delivery_date == null || delivery_date == undefined) {
-        res.status(400).send("Delivery date is mandatory");
+        res.status(400).send({ "error" : "Delivery date is mandatory" });
         return;
     }
 
     var date = Date.parse(delivery_date);
     if (date == null) {
-        res.status(400).send("Incorrect date format. Expected format - yyyy/mm/dd");
+        res.status(400).send({ "error" : "Incorrect date format. Expected format - yyyy/mm/dd" });
         return;
     }
     var formatted_date = date.toString("yyyyMMdd");
@@ -92,7 +92,7 @@ router.post('/:token', function (req, res) {
     var slot = parse_delivery_time(delivery_start_time, delivery_end_time);
 
     if (slot.succcess == false) {
-        res.status(400).send(slot.message);
+        res.status(400).send({ "error" : slot.message });
         return;
     }
 
@@ -100,13 +100,13 @@ router.post('/:token', function (req, res) {
      * Validate token
      */
     if (tokens_cache[token] == null || tokens_cache[token] == undefined) {
-        res.status(400).send("Invalid token");
+        res.status(400).send({ "error" : "Invalid token" });
         return;
     }
 
     var account_id = tokens_cache[token].accountId;
     if (account_id == null || account_id == undefined) {
-        res.status(400).send("Invalid token");
+        res.status(400).send({ "error" : "Invalid token" });
         return;
     }
 
@@ -115,27 +115,27 @@ router.post('/:token', function (req, res) {
      * Validate mandatory fields
      */
     if (order_id == null || order_id == undefined) {
-        res.status(400).send("Order id is mandatory");
+        res.status(400).send({ "error" : "Order id is mandatory" });
         return;
     }
 
     if (name == null || name == undefined) {
-        res.status(400).send("Name is mandatory");
+        res.status(400).send({ "error" : "Name is mandatory" });
         return;
     }
 
     if (mobile == null || mobile == undefined) {
-        res.status(400).send("Mobile number is mandatory");
+        res.status(400).send({ "error" : "Mobile number is mandatory" });
         return;
     }
 
     if (address == null || address == undefined) {
-        res.status(400).send("Address is mandatory");
+        res.status(400).send({ "error" : "Address is mandatory" });
         return;
     }
 
     if (delivery_date == null || delivery_date == undefined) {
-        res.status(400).send("Delivery date is mandatory");
+        res.status(400).send({ "error" : "Delivery date is mandatory" });
         return;
     }
 
@@ -143,8 +143,8 @@ router.post('/:token', function (req, res) {
      * Check if we have reached daily api usage limit
      */
     if (daily_api_usage_limit_reached(token)) {
-        res.status(400).send("You have reached daily limit for the api. " +
-            "Api usage count for the day is " + API_USAGE_LIMIT_PER_DAY);
+        res.status(400).send({ "error" : "You have reached daily limit for the api. " +
+            "Api usage count for the day is " + API_USAGE_LIMIT_PER_DAY });
         return;
     }
 
@@ -191,13 +191,13 @@ router.delete("/:token", function(req, res){
      * Parse date
      */
     if (delivery_date == null || delivery_date == undefined) {
-        res.status(400).send("Delivery date is mandatory");
+        res.status(400).send({ "error" : "Delivery date is mandatory" });
         return;
     }
 
     var date = Date.parse(delivery_date);
     if (date == null) {
-        res.status(400).send("Incorrect date format. Expected format - yyyy/mm/dd");
+        res.status(400).send({ "error" : "Incorrect date format. Expected format - yyyy/mm/dd" });
         return;
     }
     var formatted_date = date.toString("yyyyMMdd");
@@ -206,7 +206,7 @@ router.delete("/:token", function(req, res){
      * Validate mandatory fields
      */
     if (order_id == null || order_id == undefined) {
-        res.status(400).send("Order id is mandatory");
+        res.status(400).send({ "error" : "Order id is mandatory" });
         return;
     }
 
@@ -214,13 +214,13 @@ router.delete("/:token", function(req, res){
      * Validate token
      */
     if (tokens_cache[token] == null || tokens_cache[token] == undefined) {
-        res.status(400).send("Invalid token");
+        res.status(400).send({ "error" : "Invalid token" });
         return;
     }
 
     var account_id = tokens_cache[token].accountId;
     if (account_id == null || account_id == undefined) {
-        res.status(400).send("Invalid token");
+        res.status(400).send({ "error" : "Invalid token" });
         return;
     }
 
@@ -228,7 +228,7 @@ router.delete("/:token", function(req, res){
         .once("value", function(snapshot) {
             var orders = snapshot.val();
             if (orders == null) {
-                res.status(400).send("No orders found");
+                res.status(400).send({ "error" : "No orders found" });
                 return;
             }
 
@@ -238,8 +238,8 @@ router.delete("/:token", function(req, res){
                         if (id == order_id) {
                             for (var fields in orders[date][id]) {
                                 if (fields == "deviceid") {
-                                    res.status(400).send("User is assigned to the order. " +
-                                        "Please unassign the user and delete the order");
+                                    res.status(400).send({ "error" : "User is assigned to the order. " +
+                                        "Please unassign the user and delete the order" });
                                     return;
                                 }
                             }
@@ -251,7 +251,7 @@ router.delete("/:token", function(req, res){
                     }
                 }
             }
-            res.status(400).send("Order not found");
+            res.status(400).send({ "error" : "Order not found" });
             return;
 
         });

@@ -7,10 +7,22 @@ app.use(bodyParser.text(limit=2048));
 app.use(bodyParser.raw(limit=2048));
 app.use(bodyParser.json());
 
+var loggly = require('loggly');
+var loggly_token = process.env.LOGGLY_TOKEN || "7b9f6d3d-01ed-45c5-b4ed-e8d627764998";
+var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN || "kousik";
+
+var client = loggly.createClient({
+    token: loggly_token,
+    subdomain: loggly_sub_domain,
+    tags: ["stick", "write-dev", "info"],
+    json:true
+});
+
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    client.log({ "url" : req.url, "body" : req.body,  "method" : req.method, "params" : req.params});
     next();
 });
 

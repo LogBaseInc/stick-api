@@ -105,9 +105,10 @@ router.post('/:accountid', function (req, res) {
 
         if (idx == products.length - 1) {
             batchWrite(product_list, true, res);
+            product_list = [];
         }
 
-        if (product_list.size == DYNAMODB_BATCH_WRITE_LIMIT) {
+        if (product_list.length == DYNAMODB_BATCH_WRITE_LIMIT) {
             batchWrite(product_list, false, res);
             product_list = [];
         }

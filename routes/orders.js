@@ -4,7 +4,7 @@ var Firebase = require("firebase");
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
 require("datejs");
 
-var API_USAGE_LIMIT_PER_DAY = 200;
+var API_USAGE_LIMIT_PER_DAY = 300;
 
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;
@@ -60,126 +60,17 @@ config_ref.on('child_removed', function(snapshot) {
 //APIs
 router.post('/:token', function (req, res) {
     var token = req.params.token || " ";
-    var order_id = req.body.order_id;
-    var name = req.body.name;
-    var address = req.body.address;
-    var mobile = req.body.mobile_number;
-    var delivery_date = req.body.delivery_date;
-    var delivery_start_time = req.body.delivery_start_time || 10;
-    var delivery_end_time = req.body.delivery_end_time || 18;
-    var cod_amount = req.body.cod_amount || 0;
-    var product_name = req.body.product_name || "";
-    var product_desc = req.body.product_desc || "";
-    var notes = req.body.notes || "";
-    var tags = req.body.tags || "";
-    var url = req.body.url || "";
+    processItems(token, [req.body], res);
+});
 
-    /*
-     * Parse date and delivery slots
-     */
-    if (delivery_date == null || delivery_date == undefined) {
-        res.status(400).send({ "error" : "Delivery date is mandatory" });
+
+router.post('/batch/:token', function(req, res) {
+    var token = req.params.token || " ";
+    if (req.body.length <= 0) {
+        res.status(400).send({"error" : "No orders to process"});
         return;
     }
-
-    var date = Date.parse(delivery_date);
-    if (date == null) {
-        res.status(400).send({ "error" : "Incorrect date format. Expected format - yyyy/mm/dd" });
-        return;
-    }
-    var formatted_date = date.toString("yyyyMMdd");
-
-    var slot = parse_delivery_time(delivery_start_time, delivery_end_time);
-
-    if (slot.succcess == false) {
-        res.status(400).send({ "error" : slot.message });
-        return;
-    }
-
-    /*
-     * Validate token
-     */
-    if (tokens_cache[token] == null || tokens_cache[token] == undefined) {
-        res.status(400).send({ "error" : "Invalid token" });
-        return;
-    }
-
-    var account_id = tokens_cache[token].accountId;
-    if (account_id == null || account_id == undefined) {
-        res.status(400).send({ "error" : "Invalid token" });
-        return;
-    }
-
-
-    /*
-     * Validate mandatory fields
-     */
-    if (order_id == null || order_id == undefined) {
-        res.status(400).send({ "error" : "Order id is mandatory" });
-        return;
-    }
-
-    if (name == null || name == undefined) {
-        res.status(400).send({ "error" : "Name is mandatory" });
-        return;
-    }
-
-    if (mobile == null || mobile == undefined) {
-        res.status(400).send({ "error" : "Mobile number is mandatory" });
-        return;
-    }
-
-    if (address == null || address == undefined) {
-        res.status(400).send({ "error" : "Address is mandatory" });
-        return;
-    }
-
-    if (delivery_date == null || delivery_date == undefined) {
-        res.status(400).send({ "error" : "Delivery date is mandatory" });
-        return;
-    }
-
-    /*
-     * Check if we have reached daily api usage limit
-     */
-    if (daily_api_usage_limit_reached(token)) {
-        res.status(400).send({ "error" : "You have reached daily limit for the api. " +
-            "Api usage count for the day is " + API_USAGE_LIMIT_PER_DAY });
-        return;
-    }
-
-    incrementApiCount(token);
-
-   var ts = new Date().getTime();
-
-    /*
-     * Fill in the order to update
-     */
-    var order_details = {
-        address: address,
-        amount: cod_amount,
-        delivery_date: formatted_date,
-        mobilenumber: mobile,
-        name: name,
-        notes: notes,
-        ordernumber: order_id,
-        productdesc: product_desc,
-        productname: product_name,
-        time: slot.time_slot,
-        tags: tags,
-        url: url,
-        createdat:ts
-    }
-
-
-    console.log(order_details);
-    /*
-     * Get the firebase ref and update
-     */
-    var order_ref = firebase_ref.child('/accounts/' + account_id + '/unassignorders/' + formatted_date + "/" + order_id);
-    order_ref.update(order_details);
-
-    res.status(200).send();
+    processItems(token, req.body, res);
 });
 
 router.delete("/:token", function(req, res){
@@ -348,5 +239,144 @@ function incrementApiCount(token) {
     count_ref.update(orderCount);
     return;
 }
+
+function processItems(token, items, res) {
+    /*
+     * Validate token
+     */
+    if (tokens_cache[token] == null || tokens_cache[token] == undefined) {
+        res.status(400).send({ "error" : "Invalid token" });
+        return;
+    }
+
+    var account_id = tokens_cache[token].accountId;
+    if (account_id == null || account_id == undefined) {
+        res.status(400).send({ "error" : "Invalid token" });
+        return;
+    }
+
+    for (var idx in items) {
+        var order_id = items[idx].order_id;
+        var name = items[idx].name;
+        var address = items[idx].address;
+        var mobile = items[idx].mobile_number;
+        var delivery_date = items[idx].delivery_date;
+        var delivery_start_time = items[idx].delivery_start_time || 10;
+        var delivery_end_time = items[idx].delivery_end_time || 18;
+        var cod_amount = items[idx].cod_amount || 0;
+        var product_name = items[idx].product_name || "";
+        var product_desc = items[idx].product_desc || "";
+        var notes = items[idx].notes || "";
+        var tags = items[idx].tags || "";
+        var url = items[idx].url || "";
+        var zip = items[idx].zip;
+        var itms = items[idx].items || null;
+        var country = items[idx].country;
+
+        /*
+         * Parse date and delivery slots
+         */
+        if (delivery_date == null || delivery_date == undefined) {
+            res.status(400).send({ "error": "Delivery date is mandatory" });
+            return;
+        }
+
+        var date = Date.parse(delivery_date);
+        if (date == null) {
+            res.status(400).send({ "error": "Incorrect date format. Expected format - yyyy/mm/dd" });
+            return;
+        }
+        var formatted_date = date.toString("yyyyMMdd");
+
+        var slot = parse_delivery_time(delivery_start_time, delivery_end_time);
+
+        if (slot.succcess == false) {
+            res.status(400).send({ "error": slot.message });
+            return;
+        }
+
+        /*
+         * Validate mandatory fields
+         */
+        if (order_id == null || order_id == undefined) {
+            res.status(400).send({ "error": "Order id is mandatory" });
+            return;
+        }
+
+        if (name == null || name == undefined) {
+            res.status(400).send({ "error": "Name is mandatory" });
+            return;
+        }
+
+        if (mobile == null || mobile == undefined) {
+            res.status(400).send({ "error": "Mobile number is mandatory" });
+            return;
+        }
+
+        if (address == null || address == undefined) {
+            res.status(400).send({ "error": "Address is mandatory" });
+            return;
+        }
+
+        if (delivery_date == null || delivery_date == undefined) {
+            res.status(400).send({ "error": "Delivery date is mandatory" });
+            return;
+        }
+
+        if (zip == null || zip == undefined) {
+            res.status(400).send({ "error": "Zip is mandatory"});
+            return;
+        }
+
+        if (country == null || country == undefined) {
+            res.status(400).send({"error" : "Country is mandatory"});
+            return;
+        }
+        /*
+         * Check if we have reached daily api usage limit
+         */
+        if (daily_api_usage_limit_reached(token)) {
+            res.status(400).send({ "error": "You have reached daily limit for the api. " +
+                "Api usage count for the day is " + API_USAGE_LIMIT_PER_DAY });
+            return;
+        }
+
+        incrementApiCount(token);
+
+        var ts = new Date().getTime();
+
+        /*
+         * Fill in the order to update
+         */
+        var order_details = {
+            address: address,
+            amount: cod_amount,
+            delivery_date: formatted_date,
+            mobilenumber: mobile,
+            name: name,
+            notes: notes,
+            ordernumber: order_id,
+            productdesc: product_desc,
+            productname: product_name,
+            time: slot.time_slot,
+            tags: tags,
+            url: url,
+            createdat: ts,
+            zip: zip,
+            items: itms,
+            country: country
+        };
+
+
+        console.log(order_details);
+        /*
+         * Get the firebase ref and update
+         */
+        var order_ref = firebase_ref.child('/accounts/' + account_id + '/unassignorders/' + formatted_date + "/" + order_id);
+        order_ref.update(order_details);
+    }
+    res.status(200).send();
+    return;
+};
 
 module.exports = router;

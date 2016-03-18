@@ -122,16 +122,28 @@ function updateStat(referenceUrl, key, uid, accountDict) {
                     var accountId = data[admin].account;
 
                     email[data[admin].email.replace(/\.|@/g, " ")] = data[admin].email;
-                    stats["admins"] = email;
+
+                    var stats_ref = firebase_ref.child("/stats/" + accountDict[accountId] + "/admins");
+                    stats_ref.update(email);
 
                     var time = getCreatedTime()[admin];
                     if (time != null && time != undefined) {
                         stats["createdon"] = time;
+                        firebase_ref.child("/stats/" + accountDict[accountId] + "/email").
+                            once("value", function(snapshot) {
+                                var dta = snapshot.val();
+                                if (dta != null && dta != undefined && dta == this.email ) {
+                                    console.log(dta, this.email, this.stats);
+                                    var stats_ref = firebase_ref.child("/stats/" + this.accountDict[this.accountId]);
+                                   stats_ref.update(this.stats);
+                                };
+                            }, {
+                                stats : stats,
+                                email : data[admin].email,
+                                accountDict : accountDict,
+                                accountId : accountId
+                            });
                     }
-
-                    var stats_ref = firebase_ref.child("/stats/" + accountDict[accountId]);
-                    stats_ref.update(stats);
-
                 }
                 return;
 

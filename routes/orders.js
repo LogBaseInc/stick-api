@@ -71,15 +71,15 @@ config_ref.on('child_removed', function(snapshot) {
 
 //APIs
 router.post('/:token', function (req, res) {
-    client.log({body : req.body}, ["POST"]);
     var token = req.params.token || " ";
+    client.log({body : req.body, token : token}, ["POST"]);
     processItems(token, [req.body], res);
 });
 
 
 router.post('/batch/:token', function(req, res) {
-    client.log({body : req.body}, ["POST", "batch"]);
     var token = req.params.token || " ";
+    client.log({body : req.body, token : token}, ["POST", "batch"]);
     if (req.body.length <= 0) {
         res.status(400).send({"error" : "No orders to process"});
         return;
@@ -88,10 +88,12 @@ router.post('/batch/:token', function(req, res) {
 });
 
 router.delete("/:token", function(req, res){
-    client.log({body : req.body}, ["DELETE"])
     var token = req.params.token || " ";
     var order_id = req.body.order_id;
     var delivery_date = req.body.delivery_date;
+
+    client.log({body : req.body, token : token}, ["DELETE"])
+
 
     /*
      * Parse date

@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var Firebase = require("firebase");
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
+var request = require('request');
 require("datejs");
 
 var API_USAGE_LIMIT_PER_DAY = 300;
@@ -37,6 +38,17 @@ tokens_ref.on('child_removed', function(snapshot) {
     delete tokens_cache[removed_entry.key()];
 });
 
+var loggly = require('loggly');
+var loggly_token = process.env.LOGGLY_TOKEN || "7b9f6d3d-01ed-45c5-b4ed-e8d627764998";
+var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN || "kousik";
+
+var client = loggly.createClient({
+    token: loggly_token,
+    subdomain: loggly_sub_domain,
+    tags: ["stick", "orders"],
+    json:true
+});
+
 
 //Cache firebase config
 var config_cache = {};
@@ -59,12 +71,14 @@ config_ref.on('child_removed', function(snapshot) {
 
 //APIs
 router.post('/:token', function (req, res) {
+    client.log({body : req.body}, ["POST"]);
     var token = req.params.token || " ";
     processItems(token, [req.body], res);
 });
 
 
 router.post('/batch/:token', function(req, res) {
+    client.log({body : req.body}, ["POST", "batch"]);
     var token = req.params.token || " ";
     if (req.body.length <= 0) {
         res.status(400).send({"error" : "No orders to process"});
@@ -74,6 +88,7 @@ router.post('/batch/:token', function(req, res) {
 });
 
 router.delete("/:token", function(req, res){
+    client.log({body : req.body}, ["DELETE"])
     var token = req.params.token || " ";
     var order_id = req.body.order_id;
     var delivery_date = req.body.delivery_date;
@@ -372,11 +387,41 @@ function processItems(token, items, res) {
         /*
          * Get the firebase ref and update
          */
-        var order_ref = firebase_ref.child('/accounts/' + account_id + '/unassignorders/' + formatted_date + "/" + order_id);
+        var order_ref_url = '/accounts/' + account_id + '/unassignorders/' + formatted_date + "/" + order_id;
+        var order_ref = firebase_ref.child(order_ref_url);
         order_ref.update(order_details);
+        updateLocation(country, zip, order_ref_url, true);
     }
     res.status(200).send();
     return;
 };
+
+
+function updateLocation(country, zip, order_ref_url, retry) {
+    var options = {
+        url: 'http://maps.googleapis.com/maps/api/geocode/json?address=' + zip + ' ' + country + '&sensor=false'
+    };
+
+    function callback(error, response, body) {
+        if (!error && response.statusCode == 200 && body.toString().indexOf("\"status\" : \"OK\"") >= 0) {
+            var json = JSON.parse(body);
+            var location = json.results[0].geometry.location;
+            console.log(location);
+            var location_ref = firebase_ref.child(order_ref_url + "/location");
+            location_ref.update(location);
+            client.log( { country: country, zip : zip, url : order_ref_url, location : location }, ["location update"]);
+            return;
+        } else {
+            if (retry) {
+                updateLocation(country, zip, order_ref_url, false);
+                client.log( { country: country, zip : zip, url : order_ref_url }, ["location retry"]);
+            } else {
+                client.log( { country: country, zip : zip, url : order_ref_url, response : body },
+                    ["location retry failed"]);
+            }
+        }
+    }
+    request(options, callback);
+}
 
 module.exports = router;

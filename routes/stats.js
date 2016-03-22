@@ -133,7 +133,7 @@ function updateStat(referenceUrl, key, uid, accountDict) {
                             once("value", function(snapshot) {
                                 var dta = snapshot.val();
                                 if (dta != null && dta != undefined && dta == this.email ) {
-                                    console.log(dta, this.email, this.stats);
+                                    //console.log(dta, this.email, this.stats);
                                     var stats_ref = firebase_ref.child("/stats/" + this.accountDict[this.accountId]);
                                    stats_ref.update(this.stats);
                                 };

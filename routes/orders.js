@@ -3,6 +3,7 @@ var router = express.Router();
 var Firebase = require("firebase");
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
 var request = require('request');
+var utils = require("./utils.js");
 require("datejs");
 
 var API_USAGE_LIMIT_PER_DAY = 300;
@@ -94,7 +95,6 @@ router.delete("/:token", function(req, res){
 
     client.log({body : req.body, token : token}, ["DELETE"])
 
-
     /*
      * Parse date
      */
@@ -121,12 +121,16 @@ router.delete("/:token", function(req, res){
     /*
      * Validate token
      */
-    if (tokens_cache[token] == null || tokens_cache[token] == undefined) {
+    if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !utils.validateAccountIds(token)) {
         res.status(400).send({ "error" : "Invalid token" });
         return;
     }
 
-    var account_id = tokens_cache[token].accountId;
+    var account_id = token;
+    if (!utils.validateAccountIds(token)) {
+        account_id = tokens_cache[token].accountId;
+    }
+
     if (account_id == null || account_id == undefined) {
         res.status(400).send({ "error" : "Invalid token" });
         return;
@@ -261,12 +265,16 @@ function processItems(token, items, res) {
     /*
      * Validate token
      */
-    if (tokens_cache[token] == null || tokens_cache[token] == undefined) {
+    if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !utils.validateAccountIds(token)) {
         res.status(400).send({ "error" : "Invalid token" });
         return;
     }
 
-    var account_id = tokens_cache[token].accountId;
+    var account_id = token;
+    if (!utils.validateAccountIds(token)) {
+        account_id = tokens_cache[token].accountId;
+    }
+
     if (account_id == null || account_id == undefined) {
         res.status(400).send({ "error" : "Invalid token" });
         return;
@@ -289,6 +297,7 @@ function processItems(token, items, res) {
         var zip = items[idx].zip;
         var itms = items[idx].items || null;
         var country = items[idx].country;
+        var delivery_time_slot = items[idx].delivery_time_slot || null;
 
         /*
          * Parse date and delivery slots
@@ -305,7 +314,10 @@ function processItems(token, items, res) {
         }
         var formatted_date = date.toString("yyyyMMdd");
 
-        var slot = parse_delivery_time(delivery_start_time, delivery_end_time);
+        var slot = { "time_slot" : delivery_time_slot};
+        if (delivery_time_slot == null) {
+            slot = parse_delivery_time(delivery_start_time, delivery_end_time);
+        }
 
         if (slot.succcess == false) {
             res.status(400).send({ "error": slot.message });
@@ -352,13 +364,15 @@ function processItems(token, items, res) {
         /*
          * Check if we have reached daily api usage limit
          */
-        if (daily_api_usage_limit_reached(token)) {
-            res.status(400).send({ "error": "You have reached daily limit for the api. " +
-                "Api usage count for the day is " + API_USAGE_LIMIT_PER_DAY });
-            return;
-        }
+        if (token != account_id) {
+            if (daily_api_usage_limit_reached(token)) {
+                res.status(400).send({ "error": "You have reached daily limit for the api. " +
+                    "Api usage count for the day is " + API_USAGE_LIMIT_PER_DAY });
+                return;
+            }
 
-        incrementApiCount(token);
+            incrementApiCount(token);
+        }
 
         var ts = new Date().getTime();
 

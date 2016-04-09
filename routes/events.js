@@ -53,18 +53,22 @@ router.post('/app', function(req, res) {
     var date = req.body.delivery_date;
     var activity = req.body.activity;
     var time_ms = req.body.time_ms;
+    var device_id = req.body.device_id;
+    var token = req.body.token;
     var activity_date = new Date(time_ms);
 
     client.log(req.body, ["events"]);
 
     console.log(activity_date);
-    console.log(hook_url);
+    console.log(hook_url, device_id, token);
     if (activity_date == null || activity_date == undefined || activity_date == "Invalid Date") {
         res.status(400).send("Invalid time_ms");
     }
 
 
-    post_to_web_hook(order_id, account_id, hook_url, date, activity, time_ms);
+    if (hook_url != null) {
+        post_to_web_hook(order_id, account_id, hook_url, date, activity, time_ms);
+    }
     res.status(200).end();
 });
 

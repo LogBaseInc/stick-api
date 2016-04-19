@@ -31,6 +31,9 @@ account_id_ref.on('child_removed', function(snapshot) {
     delete account_id_cache[removed_entry.key()];
 });
 
+//Cache firebase account - trackyourorder mapping
+var account_trackyourorder_cache = {};
+
 module.exports = {
     getAccountIds: function(){
         return account_id_cache;
@@ -46,6 +49,14 @@ module.exports = {
         } else {
             return false;
         }
+    },
+
+    getAccountTrackyourorder : function(account_id) {
+        return account_trackyourorder_cache[account_id];
+    },
+
+    setAccountTrackyourorder : function(account_id, trackyourorder) {
+        return account_trackyourorder_cache[account_id] = trackyourorder;
     },
 
     parseDDBJson: function (DDBJson) {

@@ -3,6 +3,7 @@ var router = express.Router();
 var AWS = require('aws-sdk');
 var request = require('request');
 AWS.config.update({region: 'us-east-1'});
+var utils = require("./utils.js");
 var kinesis = new AWS.Kinesis();
 var kinesis_stream = process.env.EVENTS_STREAM;
 var Firebase = require("firebase");
@@ -54,13 +55,12 @@ router.post('/app', function(req, res) {
     var activity = req.body.activity;
     var time_ms = req.body.time_ms;
     var device_id = req.body.device_id;
-    var token = req.body.token;
     var activity_date = new Date(time_ms);
 
     client.log(req.body, ["events"]);
 
     console.log(activity_date);
-    console.log(hook_url, device_id, token);
+    console.log(hook_url, device_id);
     if (activity_date == null || activity_date == undefined || activity_date == "Invalid Date") {
         res.status(400).send("Invalid time_ms");
     }
@@ -69,6 +69,8 @@ router.post('/app', function(req, res) {
     if (hook_url != null) {
         post_to_web_hook(order_id, account_id, hook_url, date, activity, time_ms);
     }
+
+    //trackOrder(account_id, activity, date, order_id, device_id);
     res.status(200).end();
 });
 
@@ -76,6 +78,38 @@ router.post('/app', function(req, res) {
 module.exports = router;
 
 //Functions
+function trackOrder(accountid, activity, date, orderid, deviceid) {
+    if(activity != null && activity != undefined && activity != "") {
+        var status = ((activity.toLowerCase() == "pickedup") ? "Dispatched" : ((activity.toLowerCase() == "delivered") ? "Delivered" : null));
+        if(status != null) {
+            var token = accountid +"_"+orderid;
+            var trackyourorder = utils.getAccountTrackyourorder(accountid);
+            if(trackyourorder == null) {
+                firebase_ref.child('/accounts/' + accountid+'/settings/trackyourorder')
+                .once("value", function(snapshot) {
+                    var istrackenabled = (snapshot.val() != null && snapshot.val() != undefined && snapshot.val() != "" ) ? snapshot.val().toString() : "false";
+                    utils.setAccountTrackyourorder(this.accountid, istrackenabled);
+                    setOrderStatus(istrackenabled, this.status, this.date, this.token, this.deviceid);
+                },{accountid: accountid, status: status, date: date, token: token, deviceid: deviceid});
+            }
+            else {
+                setOrderStatus(trackyourorder, status, date, token, deviceid);
+            }
+        }
+    }
+}
+
+function setOrderStatus(trackyourorder, status, date, token, deviceid) {
+    if(trackyourorder == "true") {
+        var trackurl_ref = firebase_ref.child('/trackurl/'+date + "/"+ token);
+
+        if(status == "Dispatched")
+            trackurl_ref.update({device: deviceid, status : status, starttime: new Date().getTime()});
+        else if(status == "Delivered")
+            trackurl_ref.update({status : status, endtime: new Date().getTime()});
+    }
+}
+
 function send_to_kinesis(version, source_id, data) {
 	console.log('Received event: ' + version + '|' + source_id + '|' + data);
 	var generic_event = {type: 'generic', data: data};

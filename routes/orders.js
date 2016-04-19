@@ -407,6 +407,8 @@ function processItems(token, items, res) {
         var order_ref = firebase_ref.child(order_ref_url);
         order_ref.update(order_details);
         updateLocation(country, zip, order_ref_url, true);
+
+        //trackOrder(account_id, formatted_date, order_id)
     }
     res.status(200).send();
     return;
@@ -438,6 +440,35 @@ function updateLocation(country, zip, order_ref_url, retry) {
         }
     }
     request(options, callback);
+}
+
+function trackOrder(accountid, date, orderid) {
+    var trackyourorder = utils.getAccountTrackyourorder(accountid);
+
+    if(trackyourorder == null) {
+        firebase_ref.child('/accounts/' + accountid+'/settings/trackyourorder')
+        .once("value", function(snapshot) {
+            var istrackenabled = (snapshot.val() != null && snapshot.val() != undefined && snapshot.val() != "" ) ? snapshot.val().toString() : "false";
+            utils.setAccountTrackyourorder(this.accountid, istrackenabled);
+            setOrderTrackUrl(istrackenabled, this.accountid, this.date, this.orderid);
+        },{accountid: accountid, date: date, orderid: orderid});
+    }
+    else {
+        setOrderTrackUrl(trackyourorder, accountid, date, orderid);
+    }
+}
+
+function setOrderTrackUrl(trackyourorder, accountid, date, orderid) {
+    if(trackyourorder == "true") {
+        var token = accountid +"_"+orderid;
+        firebase_ref.child('/trackurl/'+date+"/"+token)
+        .once("value", function(snapshot) {
+            if(snapshot.val() == null || snapshot.val() == undefined) {
+                var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token);
+                trackurl_ref.update({status : "Placed"});
+            }
+        }, {token : token, date : date});
+    }
 }
 
 module.exports = router;

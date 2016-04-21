@@ -408,7 +408,7 @@ function processItems(token, items, res) {
         order_ref.update(order_details);
         updateLocation(country, zip, order_ref_url, true);
 
-        //trackOrder(account_id, formatted_date, order_id)
+        //trackOrder(account_id, formatted_date, order_id, tags)
     }
     res.status(200).send();
     return;
@@ -442,7 +442,7 @@ function updateLocation(country, zip, order_ref_url, retry) {
     request(options, callback);
 }
 
-function trackOrder(accountid, date, orderid) {
+function trackOrder(accountid, date, orderid, tags) {
     var trackyourorder = utils.getAccountTrackyourorder(accountid);
 
     if(trackyourorder == null) {
@@ -450,15 +450,15 @@ function trackOrder(accountid, date, orderid) {
         .once("value", function(snapshot) {
             var istrackenabled = (snapshot.val() != null && snapshot.val() != undefined && snapshot.val() != "" ) ? snapshot.val().toString() : "false";
             utils.setAccountTrackyourorder(this.accountid, istrackenabled);
-            setOrderTrackUrl(istrackenabled, this.accountid, this.date, this.orderid);
-        },{accountid: accountid, date: date, orderid: orderid});
+            setOrderTrackUrl(istrackenabled, this.accountid, this.date, this.orderid, this.tags);
+        },{accountid: accountid, date: date, orderid: orderid, tags: tags});
     }
     else {
-        setOrderTrackUrl(trackyourorder, accountid, date, orderid);
+        setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags);
     }
 }
 
-function setOrderTrackUrl(trackyourorder, accountid, date, orderid) {
+function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags) {
     if(trackyourorder == "true") {
         var token = accountid +"_"+orderid;
         firebase_ref.child('/trackurl/'+date+"/"+token)
@@ -466,6 +466,18 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid) {
             if(snapshot.val() == null || snapshot.val() == undefined) {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token);
                 trackurl_ref.update({status : "Placed", history: {placed: new Date().getTime()}});
+            }
+            else if(tags.indexOf('RWD') >=0 && snapshot.val().status == "Placed") {
+                var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/status");
+                trackurl_ref.set("Reviewed");
+                trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/history/reviewed");
+                trackurl_ref.set(new Date().getTime());
+            }
+            else if(tags.indexOf('PPD') >=0 && (snapshot.val().status == "Placed" || snapshot.val().status == "Reviewed")) {
+                var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/status");
+                trackurl_ref.set("Prepared");
+                trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/history/prepared");
+                trackurl_ref.set(new Date().getTime());
             }
         }, {token : token, date : date});
     }

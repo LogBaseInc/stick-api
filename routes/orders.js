@@ -465,7 +465,7 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid) {
         .once("value", function(snapshot) {
             if(snapshot.val() == null || snapshot.val() == undefined) {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token);
-                trackurl_ref.update({status : "Placed"});
+                trackurl_ref.update({status : "Placed", history: {placed: new Date().getTime()}});
             }
         }, {token : token, date : date});
     }

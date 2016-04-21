@@ -100,13 +100,22 @@ function trackOrder(accountid, activity, date, orderid, deviceid) {
 }
 
 function setOrderStatus(trackyourorder, status, date, token, deviceid) {
+
+    console.log("setOrderStatus: ", trackyourorder, status, date, token, deviceid);
+
     if(trackyourorder == "true") {
         var trackurl_ref = firebase_ref.child('/trackurl/'+date + "/"+ token);
 
-        if(status == "Dispatched")
+        if(status == "Dispatched") {
             trackurl_ref.update({device: deviceid, status : status, starttime: new Date().getTime()});
-        else if(status == "Delivered")
+            trackurl_ref = firebase_ref.child('/trackurl/'+date + "/"+ token+"/history/dispatched");
+            trackurl_ref.set(new Date().getTime());
+        }
+        else if(status == "Delivered") {
             trackurl_ref.update({status : status, endtime: new Date().getTime()});
+            trackurl_ref = firebase_ref.child('/trackurl/'+date + "/"+ token+"/history/delivered");
+            trackurl_ref.set(new Date().getTime());
+        }
     }
 }
 

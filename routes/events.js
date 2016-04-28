@@ -70,7 +70,7 @@ router.post('/app', function(req, res) {
         post_to_web_hook(order_id, account_id, hook_url, date, activity, time_ms);
     }
 
-    //trackOrder(account_id, activity, date, order_id, device_id);
+    trackOrder(account_id, activity, date, order_id, device_id);
     res.status(200).end();
 });
 
@@ -80,7 +80,7 @@ module.exports = router;
 //Functions
 function trackOrder(accountid, activity, date, orderid, deviceid) {
     if(activity != null && activity != undefined && activity != "") {
-        var status = ((activity.toLowerCase() == "pickedup") ? "Dispatched" : ((activity.toLowerCase() == "delivered") ? "Delivered" : null));
+        var status = ((activity.toLowerCase() == "started") ? "Dispatched" : ((activity.toLowerCase() == "delivered") ? "Delivered" : null));
         if(status != null) {
             var token = accountid +"_"+orderid;
             var trackyourorder = utils.getAccountTrackyourorder(accountid);

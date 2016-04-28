@@ -408,7 +408,7 @@ function processItems(token, items, res) {
         order_ref.update(order_details);
         updateLocation(country, zip, order_ref_url, true);
 
-        //trackOrder(account_id, formatted_date, order_id, tags)
+        trackOrder(account_id, formatted_date, order_id, tags)
     }
     res.status(200).send();
     return;

@@ -8,6 +8,19 @@ require("datejs");
 
 var API_USAGE_LIMIT_PER_DAY = 300;
 
+/*var BitlyAPI = require("node-bitlyapi");
+var Bitly = new BitlyAPI({
+    client_id: process.env.BITLY_CLIENT_ID,
+    client_secret: process.env.BITLY_CLIENT_SECRET 
+});
+Bitly.setAccessToken(process.env.BITLY_TOKEN);
+Bitly.shorten({longUrl:"http://trackorder.azurewebsites.net/?token=account060cf688-e0bb-4fbe-86cd-482a52772940_20160429_CB3623"}, function(err, results) {
+    // Do something with your new, shorter url...
+    console.log(results);
+    //results.status_code has status
+    //results.data.url has shorten url
+});*/
+
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;
 firebase_ref.authWithCustomToken(firebase_secret, function(error, authData) {

@@ -20,6 +20,7 @@
     "firebase": "^2.2.7",
     "loggly": "^1.0.8",
     "nmea": "0.0.9",
+    "node-bitlyapi": "^0.4.0",
     "request": "^2.69.0"
   }
 }

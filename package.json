@@ -19,8 +19,10 @@
     "express": "^4.13.0",
     "firebase": "^2.2.7",
     "loggly": "^1.0.8",
+    "msg91": "0.0.6",
     "nmea": "0.0.9",
     "node-bitlyapi": "^0.4.0",
-    "request": "^2.69.0"
+    "request": "^2.69.0",
+    "sendgrid": "^2.0.0"
   }
 }

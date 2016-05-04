@@ -5,21 +5,28 @@ var firebase_ref = new Firebase(process.env.FIREBASE_URL);
 var request = require('request');
 var utils = require("./utils.js");
 require("datejs");
+var BitlyAPI = require("node-bitlyapi");
+var sendgrid  = require('sendgrid')(process.env.SENDGRID_KEY);
 
 var API_USAGE_LIMIT_PER_DAY = 300;
+var MSG91_API = process.env.MSG91_API;
+var MSG91_ROUTE_NO = 4; // transactional route
 
-/*var BitlyAPI = require("node-bitlyapi");
+var loggly = require('loggly');
+var loggly_token = process.env.LOGGLY_TOKEN;
+var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN
+var client = loggly.createClient({
+    token: loggly_token,
+    subdomain: loggly_sub_domain,
+    tags: ["stick"],
+    json:true
+});
+
 var Bitly = new BitlyAPI({
     client_id: process.env.BITLY_CLIENT_ID,
     client_secret: process.env.BITLY_CLIENT_SECRET 
 });
 Bitly.setAccessToken(process.env.BITLY_TOKEN);
-Bitly.shorten({longUrl:"http://trackorder.azurewebsites.net/?token=account060cf688-e0bb-4fbe-86cd-482a52772940_20160429_CB3623"}, function(err, results) {
-    // Do something with your new, shorter url...
-    console.log(results);
-    //results.status_code has status
-    //results.data.url has shorten url
-});*/
 
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;
@@ -423,7 +430,7 @@ function processItems(token, items, res) {
         order_ref.update(order_details);
         updateLocation(country, zip, order_ref_url, true);
 
-        trackOrder(account_id, formatted_date, order_id, tags)
+        trackOrder(account_id, formatted_date, order_id, tags, mobile)
     }
     res.status(200).send();
     return;
@@ -457,7 +464,7 @@ function updateLocation(country, zip, order_ref_url, retry) {
     request(options, callback);
 }
 
-function trackOrder(accountid, date, orderid, tags) {
+function trackOrder(accountid, date, orderid, tags, mobilenumber) {
     var trackyourorder = utils.getAccountTrackyourorder(accountid);
 
     if(trackyourorder == null) {
@@ -465,15 +472,15 @@ function trackOrder(accountid, date, orderid, tags) {
         .once("value", function(snapshot) {
             var istrackenabled = (snapshot.val() != null && snapshot.val() != undefined && snapshot.val() != "" ) ? snapshot.val().toString() : "false";
             utils.setAccountTrackyourorder(this.accountid, istrackenabled);
-            setOrderTrackUrl(istrackenabled, this.accountid, this.date, this.orderid, this.tags);
-        },{accountid: accountid, date: date, orderid: orderid, tags: tags});
+            setOrderTrackUrl(istrackenabled, this.accountid, this.date, this.orderid, this.tags, this.mobilenumber);
+        },{accountid: accountid, date: date, orderid: orderid, tags: tags, mobilenumber : mobilenumber});
     }
     else {
-        setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags);
+        setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobilenumber);
     }
 }
 
-function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags) {
+function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobilenumber) {
     if(trackyourorder == "true") {
         var token = accountid +"_"+orderid;
         firebase_ref.child('/trackurl/'+date+"/"+token)
@@ -481,6 +488,7 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags) {
             if(snapshot.val() == null || snapshot.val() == undefined) {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token);
                 trackurl_ref.update({status : "Placed", history: {placed: new Date().getTime()}});
+                //sendOrderTrackSMS(this.accountid, this.orderid, this.token, this.mobilenumber);
             }
             else if(tags.indexOf('RWD') >=0 && snapshot.val().status == "Placed") {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/status");
@@ -494,8 +502,101 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags) {
                 trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/history/prepared");
                 trackurl_ref.set(new Date().getTime());
             }
-        }, {token : token, date : date});
+        }, {accountid: accountid, token : token, date : date, orderid: orderid, mobilenumber : mobilenumber});
     }
+}
+
+function sendOrderTrackSMS(accountid, orderid, token, mobilenumber) {
+    Bitly.shorten({longUrl:"http://trackorder.azurewebsites.net/?token="+token}, function(err, results) {
+        var resultobj = JSON.parse(results);
+        if(resultobj.status_code == 200) {
+            var url = resultobj.data.url;
+            var text = "Please track your order #" + orderid + " here - " + url;
+
+            var msg91obj = utils.getAccountMSG91(accountid);
+            if(msg91obj != null && msg91obj != undefined) {
+                sendSMS(msg91obj, mobilenumber, text)
+            }
+            else {
+                firebase_ref.child('/accounts/'+accountid+"/settings/nickname")
+                .once("value", function(snapshot) {
+                    var msg91obj = require("msg91")(MSG91_API, snapshot.val().toString(), MSG91_ROUTE_NO);
+                    utils.setAccountMSG91(accountid, msg91obj);
+                    sendSMS(msg91obj, this.mobilenumber, this.text);
+                }, {mobilenumber : mobilenumber, text : text});
+            }
+        }
+        else {
+            console.log(results, err);
+        }
+    });
+}
+
+function sendSMS(msg91obj, mob, text) {
+    client.log({mob : mob, text : text}, ['MSG91', 'debug_info']);
+    var mobNo = parseMobNumber(mob);
+    if (mobNo == null) {
+        client.log({mobile : mob, message : text}, ['MSG91']);
+        sendEmail("kousik@logbase.io", null, "Stick Order Placed - SMS failed", text + " " + mob);
+        return;
+    }
+    msg91obj.send(mobNo, text, function(err, response){
+        console.log(err);
+        console.log(response);
+    });
+}
+
+/*
+ * Send notification mails
+ */
+function sendEmail(emailId, order, subject, text) {
+    var payload   = {
+        to      : emailId,
+        from    : 'stick-write@logbase.io',
+        subject : subject,
+        text    : text
+    }
+
+    sendgrid.send(payload, function(err, json) {
+        if (err) { console.error(err); }
+        console.log(json);
+    });
+}
+
+function parseMobNumber(mob) {
+    console.log(mob);
+    // Cases where two numbers are provided. Pick the first 10 - 12 digit mob number
+    if (mob.length > 20) {
+        var tmp = mob.match(/\d{10,12}/);
+        if (tmp != null) {
+            mob = tmp[0];
+        }
+    }
+
+    // Pick only the numbers. Remove special characters
+    var numb = mob.match(/\d/g);
+    numb = numb.join("");
+
+    // Remove leading zeroes
+    numb = numb.replace(/^0+/, '');
+
+    switch (numb.length) {
+        case 10:
+            return numb;
+        case 11:
+            if (numb.indexOf('0') == 0) {
+                return numb.substr(1, 10);
+            }
+            return null;
+        case 12:
+            if (numb.indexOf('91') == 0) {
+                return numb.substr(2, 10);
+            }
+            return null;
+        default:
+            return null;
+    }
+    return null;
 }
 
 module.exports = router;

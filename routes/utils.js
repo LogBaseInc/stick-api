@@ -34,6 +34,9 @@ account_id_ref.on('child_removed', function(snapshot) {
 //Cache firebase account - trackyourorder mapping
 var account_trackyourorder_cache = {};
 
+//Cache firebase account - msg91 mapping
+var account_msg91_cache = {};
+
 module.exports = {
     getAccountIds: function(){
         return account_id_cache;
@@ -57,6 +60,14 @@ module.exports = {
 
     setAccountTrackyourorder : function(account_id, trackyourorder) {
         return account_trackyourorder_cache[account_id] = trackyourorder;
+    },
+
+    getAccountMSG91 : function(account_id) {
+        return account_msg91_cache[account_id];
+    },
+
+    setAccountMSG91 : function(account_id, msg91) {
+        return account_msg91_cache[account_id] = msg91;
     },
 
     parseDDBJson: function (DDBJson) {

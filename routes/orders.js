@@ -8,7 +8,7 @@ require("datejs");
 var BitlyAPI = require("node-bitlyapi");
 var sendgrid  = require('sendgrid')(process.env.SENDGRID_KEY);
 
-var API_USAGE_LIMIT_PER_DAY = 300;
+var API_USAGE_LIMIT_PER_DAY = 3000;
 var MSG91_API = process.env.MSG91_API;
 var MSG91_ROUTE_NO = 4; // transactional route
 

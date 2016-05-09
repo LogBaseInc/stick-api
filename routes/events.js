@@ -112,7 +112,7 @@ function setOrderStatus(trackyourorder, status, date, token, deviceid) {
             trackurl_ref.set(new Date().getTime());
         }
         else if(status == "Delivered") {
-            trackurl_ref.update({status : status, endtime: new Date().getTime()});
+            trackurl_ref.update({device: deviceid, status : status, endtime: new Date().getTime()});
             trackurl_ref = firebase_ref.child('/trackurl/'+date + "/"+ token+"/history/delivered");
             trackurl_ref.set(new Date().getTime());
         }

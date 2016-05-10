@@ -51,5 +51,8 @@ app.use('/api/products', products);
 var stats = require('./routes/stats');
 app.use('/api/stats', stats);
 
+var analytics = require('./routes/analytics');
+app.use('/api/analytics', analytics);
+
 app.listen(port);
 console.log('Stick App listening on port 3000');

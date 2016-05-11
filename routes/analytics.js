@@ -61,6 +61,10 @@ function setOrderCountForAllDate(account_id, res) {
                 	firebase_ref.child('/accounts/'	+ account_id + "/activity/devices/"+agent+"/daily/"+orddate+"/ordercount").set(count);
 				}
 			}
+
+			var today = new Date().toString("yyyy/MM/dd");
+			firebase_ref.child('/accounts/' + account_id +'/activity/lastupdatedon').set(today);
+
 			res.status(200).send("Order count updated");
 		});
 	});
@@ -99,6 +103,9 @@ function setOrderCount(account_id, lastupdateddate, res) {
 
 		lastupdateddate.addDays(1);
 	} while (lastupdateddate <= todaydate)
+
+	var today = new Date().toString("yyyy/MM/dd");
+	firebase_ref.child('/accounts/' + account_id +'/activity/lastupdatedon').set(today);
 
 	res.status(200).send("Order count updated");
 }

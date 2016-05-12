@@ -38,13 +38,18 @@ router.get('/update/ordercount/:accountid/', function(req, res){
 module.exports = router;
 
 function setOrderCountForAllDate(account_id, res) {
+	var todaydate = Date.parseExact(new Date().toString("yyyyMMdd"), ["yyyyMMdd"]);
+
 	//Total Orders Count
 	firebase_ref.child('/accounts/'	+ account_id + "/unassignorders")
 	.once("value", function(snapshot){
 		var orderdata = snapshot.val();
 		for(date in orderdata) {
-			var count = Object.keys(orderdata[date]).length;
-			firebase_ref.child('/accounts/'	+ account_id + "/activity/daily/"+date+"/ordercount").set(count);
+			var parseddate = Date.parseExact(date, ["yyyyMMdd"]);
+			if(parseddate <= todaydate) {
+				var count = Object.keys(orderdata[date]).length;
+				firebase_ref.child('/accounts/'	+ account_id + "/activity/daily/"+date+"/ordercount").set(count);
+			}
 		}
 
 		//Orders by agents
@@ -53,12 +58,15 @@ function setOrderCountForAllDate(account_id, res) {
 			var agentorddata = snap.val();
 			for(agent in agentorddata) {
 				for(orddate in agentorddata[agent]) {
-					var ordersobj = agentorddata[agent][orddate];
-					delete ordersobj["Activity"];
-                	delete ordersobj["Loggedin"];
+					var parseddate = Date.parseExact(orddate, ["yyyyMMdd"]);
+					if(parseddate <= todaydate) {
+						var ordersobj = agentorddata[agent][orddate];
+						delete ordersobj["Activity"];
+	                	delete ordersobj["Loggedin"];
 
-                	var count = ordersobj != null && ordersobj != undefined ? Object.keys(ordersobj).length : 0;
-                	firebase_ref.child('/accounts/'	+ account_id + "/activity/devices/"+agent+"/daily/"+orddate+"/ordercount").set(count);
+	                	var count = ordersobj != null && ordersobj != undefined ? Object.keys(ordersobj).length : 0;
+	                	firebase_ref.child('/accounts/'	+ account_id + "/activity/devices/"+agent+"/daily/"+orddate+"/ordercount").set(count);
+	                }
 				}
 			}
 

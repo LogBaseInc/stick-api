@@ -70,6 +70,10 @@ module.exports = {
         return account_msg91_cache[account_id] = msg91;
     },
 
+    getAllAccountId : function() {
+        return account_id_cache;
+    },
+
     parseDDBJson: function (DDBJson) {
         var parsedJson = {};
         for (var keys in DDBJson) {

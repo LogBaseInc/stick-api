@@ -54,5 +54,8 @@ app.use('/api/stats', stats);
 var analytics = require('./routes/analytics');
 app.use('/api/analytics', analytics);
 
+var archive = require('./routes/archive');
+app.use('/api/archive', archive);
+
 app.listen(port);
 console.log('Stick App listening on port 3000');

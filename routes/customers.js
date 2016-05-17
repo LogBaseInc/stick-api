@@ -75,6 +75,19 @@ router.get('/:accountid/:mobile', function(req, res){
     });
 });
 
+router.get('/:accountid', function(req, res){
+    var account_id = req.params.accountid || " ";
+    var resp_data = [];
+    var prev_result = null;
+
+    if (utils.validateAccountIds(account_id) != true) {
+        res.status(400).send("Invalid account id");
+        return;
+    }
+
+    fetchCustomers(account_id, null, resp_data, res);
+});
+
 //APIs
 router.post('/:accountid', function (req, res) {
     var account_id = req.params.accountid || " ";
@@ -187,6 +200,53 @@ function fetchMobileNumbers(accountId, prevResult, resp_data, res) {
                 return;
             } else {
                 fetchMobileNumbers(accountId, data, resp_data, res)
+            }
+        }
+    });
+}
+
+function fetchCustomers(accountId, prevResult, resp_data, res) {
+    var params = {
+        TableName: DYNAMODB_CUSTOMER_TABLE_NAME,
+        AttributesToGet: ['mobile', 'name', 'address', 'zip'],
+        KeyConditions: {
+            'accountId': {
+                ComparisonOperator: 'EQ',
+                AttributeValueList: [
+                    {
+                        S: accountId
+                    }
+                ]
+            }
+        },
+        ScanIndexForward: true,
+        Select: 'SPECIFIC_ATTRIBUTES'
+    };
+
+    if (prevResult != null && prevResult['LastEvaluatedKey'] != null) {
+        params['ExclusiveStartKey'] = prevResult['LastEvaluatedKey'];
+    }
+
+    console.log(params);
+    dynamodb.query(params, function(err, data) {
+        if (err) {
+            client.log(err);
+            res.status(400).send(err.message);
+            return;
+        }
+        else {
+            console.log(data);
+            if (data != null && data.Items != null) {
+                for (var idx in data.Items) {
+                    resp_data.push(utils.parseDDBJson(data.Items[idx]))
+                }
+            }
+
+            if (data.LastEvaluatedKey == null) {
+                res.status(200).send(resp_data);
+                return;
+            } else {
+                fetchCustomers(accountId, data, resp_data, res)
             }
         }
     });

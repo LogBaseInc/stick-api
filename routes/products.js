@@ -116,37 +116,34 @@ router.post('/:accountid', function (req, res) {
     }
 });
 
-router.delete("/:accountid/:uuid", function (req, res) {
+router.post("/delete/:accountid/", function (req, res) {
     var account_id = req.params.accountid;
-    var uuid = req.params.uuid;
+    var uuids = req.body;
 
     if (utils.validateAccountIds(account_id) != true) {
         res.status(400).send("Invalid account id");
         return;
     }
 
-    if (uuid == null || uuid == undefined) {
-        res.status(400).send("Invalid uuid");
-        return;
-    }
-
     /*
      * Fill in the customer details to update
      */
-    var product_details = {
-        uuid: {'S': uuid},
-        accountId: { 'S': account_id }
-    }
+    for(var i=0 ; i< uuids.length ; i++) {
+        var product_details = {
+            uuid: {'S': uuids[i]},
+            accountId: { 'S': account_id }
+        }
 
-    var delete_request = {
-        Key: product_details
-    }
+        var delete_request = {
+            Key: product_details
+        }
 
-    var list_items = {
-        DeleteRequest: delete_request
-    }
+        var list_items = {
+            DeleteRequest: delete_request
+        }
 
-    batchWrite([list_items], true, res);
+        batchWrite([list_items], true, res);
+    }
 });
 
 

@@ -319,6 +319,9 @@ function processItems(token, items, res) {
         var country = items[idx].country;
         var delivery_time_slot = items[idx].delivery_time_slot || null;
         var cod_internal = items[idx].cod_internal || null;
+        var createdby = items[idx].createdby || null;
+        var deliverycharge = items[idx].deliverycharge || null;
+        var pickuplocation = items[idx].pickuplocation || null;
 
         /*
          * Parse date and delivery slots
@@ -417,7 +420,10 @@ function processItems(token, items, res) {
             zip: zip,
             items: itms,
             country: country,
-            cod: cod_internal
+            cod: cod_internal,
+            createdby : createdby,
+            deliverycharge : deliverycharge,
+            pickuplocation : pickuplocation
         };
 
 

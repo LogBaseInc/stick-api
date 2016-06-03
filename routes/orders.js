@@ -194,6 +194,8 @@ router.get('/:token/:deliverydate/:orderid?', function(req, res) {
     var deliverydate = req.params.deliverydate || " ";
     var orderid = req.params.orderid || null;
 
+    client.log({deliverydate : deliverydate, orderid : orderid, token : token}, ["GET"]);
+
      /*
      * Validate token
      */
@@ -276,6 +278,9 @@ router.get('/daterange/:token/:startdate/:enddate', function(req, res) {
     var token = req.params.token || null;
     var startdate = req.params.startdate || null;
     var enddate = req.params.enddate || null;
+
+    client.log({startdate : startdate, enddate : enddate, token : token}, ["daterange", "GET"]);
+
      /*
      * Validate token
      */

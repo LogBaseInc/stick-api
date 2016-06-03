@@ -189,6 +189,197 @@ router.delete("/:token", function(req, res){
         });
 });
 
+router.get('/:token/:deliverydate/:orderid?', function(req, res) {
+    var token = req.params.token || " ";
+    var deliverydate = req.params.deliverydate || " ";
+    var orderid = req.params.orderid || null;
+
+     /*
+     * Validate token
+     */
+    if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !utils.validateAccountIds(token)) {
+        res.status(400).send({ "error" : "Invalid token" });
+        return;
+    }
+
+    var account_id = token;
+    if (!utils.validateAccountIds(token)) {
+        account_id = tokens_cache[token].accountId;
+    }
+
+    if (account_id == null || account_id == undefined) {
+        res.status(400).send({ "error" : "Invalid token" });
+        return;
+    }
+
+    /*
+     * Parse date
+     */
+    if (deliverydate == null || deliverydate == undefined) {
+        res.status(400).send({ "error" : "Delivery date is mandatory" });
+        return;
+    }
+
+    var date = Date.parseExact(deliverydate, "yyyyMMdd");
+    if (date == null) {
+        res.status(400).send({ "error" : "Incorrect date format. Expected format - yyyyMMdd" });
+        return;
+    }
+
+    firebase_ref.child('/accounts/' + account_id + '/settings/vendorsupport')
+    .once("value", function(snapshot) {
+        var isvendorsupport = snapshot.val() != null && snapshot.val() != undefined && snapshot.val() != "" ? snapshot.val() : false;
+        var vendors = [];
+        if(isvendorsupport == true) {
+            var Base64={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",encode:function(e){var t="";var n,r,i,s,o,u,a;var f=0;e=Base64._utf8_encode(e);while(f<e.length){n=e.charCodeAt(f++);r=e.charCodeAt(f++);i=e.charCodeAt(f++);s=n>>2;o=(n&3)<<4|r>>4;u=(r&15)<<2|i>>6;a=i&63;if(isNaN(r)){u=a=64}else if(isNaN(i)){a=64}t=t+this._keyStr.charAt(s)+this._keyStr.charAt(o)+this._keyStr.charAt(u)+this._keyStr.charAt(a)}return t},decode:function(e){var t="";var n,r,i;var s,o,u,a;var f=0;e=e.replace(/[^A-Za-z0-9\+\/\=]/g,"");while(f<e.length){s=this._keyStr.indexOf(e.charAt(f++));o=this._keyStr.indexOf(e.charAt(f++));u=this._keyStr.indexOf(e.charAt(f++));a=this._keyStr.indexOf(e.charAt(f++));n=s<<2|o>>4;r=(o&15)<<4|u>>2;i=(u&3)<<6|a;t=t+String.fromCharCode(n);if(u!=64){t=t+String.fromCharCode(r)}if(a!=64){t=t+String.fromCharCode(i)}}t=Base64._utf8_decode(t);return t},_utf8_encode:function(e){e=e.replace(/\r\n/g,"\n");var t="";for(var n=0;n<e.length;n++){var r=e.charCodeAt(n);if(r<128){t+=String.fromCharCode(r)}else if(r>127&&r<2048){t+=String.fromCharCode(r>>6|192);t+=String.fromCharCode(r&63|128)}else{t+=String.fromCharCode(r>>12|224);t+=String.fromCharCode(r>>6&63|128);t+=String.fromCharCode(r&63|128)}}return t},_utf8_decode:function(e){var t="";var n=0;var r=c1=c2=0;while(n<e.length){r=e.charCodeAt(n);if(r<128){t+=String.fromCharCode(r);n++}else if(r>191&&r<224){c2=e.charCodeAt(n+1);t+=String.fromCharCode((r&31)<<6|c2&63);n+=2}else{c2=e.charCodeAt(n+1);c3=e.charCodeAt(n+2);t+=String.fromCharCode((r&15)<<12|(c2&63)<<6|c3&63);n+=3}}return t}}
+            firebase_ref.child('/accounts/' + account_id + '/users')
+            .once("value", function(snapshot) {
+                var data = snapshot.val();
+                for(prop in data) {
+                    vendors[data[prop].uid] = Base64.decode(prop);
+                }
+            });
+        }
+
+        var firebaseref = null;
+        var isoneorder = false
+        if (orderid != null && orderid != undefined) {
+            isoneorder = true;
+            firebaseref = firebase_ref.child('/accounts/' + account_id + '/unassignorders/'+deliverydate+ "/" + orderid);
+        }
+        else {
+            firebaseref = firebase_ref.child('/accounts/' + account_id + '/unassignorders/'+deliverydate);
+        }
+
+        var orders = [];
+        firebaseref.once("value", function(snapshot) {
+            var data = snapshot.val();
+            if(isoneorder == true) {
+                var order = getOrder(data, isvendorsupport, vendors);
+                res.status(200).send(JSON.stringify(order));
+                return;
+            }
+            else {
+                for(prop in data) {
+                    var orderinfo = data[prop];
+                    orders.push(getOrder(orderinfo, isvendorsupport, vendors));
+                }
+                res.status(200).send(JSON.stringify(orders));
+                return;
+            }
+        });
+
+    });
+});
+
+router.get('/daterange/:token/:startdate/:enddate', function(req, res) {
+    var token = req.params.token || null;
+    var startdate = req.params.startdate || null;
+    var enddate = req.params.enddate || null;
+     /*
+     * Validate token
+     */
+    if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !utils.validateAccountIds(token)) {
+        res.status(400).send({ "error" : "Invalid token" });
+        return;
+    }
+
+    var account_id = token;
+    if (!utils.validateAccountIds(token)) {
+        account_id = tokens_cache[token].accountId;
+    }
+
+    if (account_id == null || account_id == undefined) {
+        res.status(400).send({ "error" : "Invalid token" });
+        return;
+    }
+
+    /*
+     * Parse date
+     */
+    if (startdate == null || startdate == undefined) {
+        res.status(400).send({ "error" : "Delivery start date is mandatory" });
+        return;
+    }
+
+    if (enddate == null || enddate == undefined) {
+        res.status(400).send({ "error" : "Delivery end date is mandatory" });
+        return;
+    }
+
+    var date = Date.parseExact(startdate, "yyyyMMdd");
+    if (date == null) {
+        res.status(400).send({ "error" : "Incorrect Delivery start date format. Expected format - yyyyMMdd" });
+        return;
+    }
+
+    var date = Date.parseExact(enddate, "yyyyMMdd");
+    if (date == null) {
+        res.status(400).send({ "error" : "Incorrect Delivery end date format. Expected format - yyyyMMdd" });
+        return;
+    }
+
+    firebase_ref.child('/accounts/' + account_id + '/settings/vendorsupport')
+    .once("value", function(snapshot) {
+        var isvendorsupport = snapshot.val() != null && snapshot.val() != undefined && snapshot.val() != "" ? snapshot.val() : false;
+        var vendors = [];
+        if(isvendorsupport == true) {
+            var Base64={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",encode:function(e){var t="";var n,r,i,s,o,u,a;var f=0;e=Base64._utf8_encode(e);while(f<e.length){n=e.charCodeAt(f++);r=e.charCodeAt(f++);i=e.charCodeAt(f++);s=n>>2;o=(n&3)<<4|r>>4;u=(r&15)<<2|i>>6;a=i&63;if(isNaN(r)){u=a=64}else if(isNaN(i)){a=64}t=t+this._keyStr.charAt(s)+this._keyStr.charAt(o)+this._keyStr.charAt(u)+this._keyStr.charAt(a)}return t},decode:function(e){var t="";var n,r,i;var s,o,u,a;var f=0;e=e.replace(/[^A-Za-z0-9\+\/\=]/g,"");while(f<e.length){s=this._keyStr.indexOf(e.charAt(f++));o=this._keyStr.indexOf(e.charAt(f++));u=this._keyStr.indexOf(e.charAt(f++));a=this._keyStr.indexOf(e.charAt(f++));n=s<<2|o>>4;r=(o&15)<<4|u>>2;i=(u&3)<<6|a;t=t+String.fromCharCode(n);if(u!=64){t=t+String.fromCharCode(r)}if(a!=64){t=t+String.fromCharCode(i)}}t=Base64._utf8_decode(t);return t},_utf8_encode:function(e){e=e.replace(/\r\n/g,"\n");var t="";for(var n=0;n<e.length;n++){var r=e.charCodeAt(n);if(r<128){t+=String.fromCharCode(r)}else if(r>127&&r<2048){t+=String.fromCharCode(r>>6|192);t+=String.fromCharCode(r&63|128)}else{t+=String.fromCharCode(r>>12|224);t+=String.fromCharCode(r>>6&63|128);t+=String.fromCharCode(r&63|128)}}return t},_utf8_decode:function(e){var t="";var n=0;var r=c1=c2=0;while(n<e.length){r=e.charCodeAt(n);if(r<128){t+=String.fromCharCode(r);n++}else if(r>191&&r<224){c2=e.charCodeAt(n+1);t+=String.fromCharCode((r&31)<<6|c2&63);n+=2}else{c2=e.charCodeAt(n+1);c3=e.charCodeAt(n+2);t+=String.fromCharCode((r&15)<<12|(c2&63)<<6|c3&63);n+=3}}return t}}
+            firebase_ref.child('/accounts/' + account_id + '/users')
+            .once("value", function(snapshot) {
+                var data = snapshot.val();
+                for(prop in data) {
+                    vendors[data[prop].uid] = Base64.decode(prop);
+                }
+            });
+        }
+
+        var orders = [];
+        var firebaseref =firebase_ref.child('/accounts/' + account_id + '/unassignorders');
+        firebaseref.orderByKey().startAt(startdate.toString()).endAt(enddate.toString()).once("value", function(snapshot) {
+            var data = snapshot.val();
+            for(dateprop in data) {
+                for(prop in data[dateprop]) {
+                    var orderinfo = data[dateprop][prop];
+                    orders.push(getOrder(orderinfo, isvendorsupport, vendors));
+                }
+            }
+            res.status(200).send(JSON.stringify(orders));
+            return;
+            
+        });
+
+    });
+    
+});
+
+function getOrder(orderinfo, isvendorsupport, vendors) {
+    var order = {};
+    order.order_id = orderinfo.ordernumber;
+    order.mobile_number = orderinfo.mobilenumber;
+    order.name = orderinfo.name;
+    order.address = orderinfo.address;
+    order.zip = orderinfo.zip;
+    order.country = orderinfo.country;
+    order.product_name = orderinfo.productname;
+    order.product_desc = orderinfo.productdesc;
+    order.cod_amount = orderinfo.amount;
+    order.delivery_date = [orderinfo.delivery_date.substr(0, 4), orderinfo.delivery_date.substr(4, 2), orderinfo.delivery_date.substr(6, 2)].join('/'); ;
+    order.delivery_time = orderinfo.time;
+    order.notes = orderinfo.notes;
+    order.tags = orderinfo.tags;
+    if(isvendorsupport) {
+        order.pickup_location = orderinfo.pickuplocation != null && orderinfo.pickuplocation != undefined && orderinfo.pickuplocation != "" ? orderinfo.pickuplocation : "";
+        order.delivery_charge = orderinfo.deliverycharge != null && orderinfo.deliverycharge != undefined && orderinfo.deliverycharge != "" ? orderinfo.deliverycharge : 0 ;
+        order.vendor = vendors[orderinfo.createdby];
+        if(order.vendor == null || order.vendor == undefined) {
+            order.vendor = "Admin";
+        }
+    }
+
+    return order;
+}
+
 function parse_delivery_time(start_time, end_time) {
     var start = parseInt(start_time);
     var end = parseInt(end_time);

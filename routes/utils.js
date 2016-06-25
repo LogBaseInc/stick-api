@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var Firebase = require("firebase");
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
+var sendgrid  = require('sendgrid')(process.env.SENDGRID_KEY);
 
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;
@@ -93,5 +94,51 @@ module.exports = {
             parsedJson[keys] = value;
         }
         return parsedJson;
+    },
+
+    sendNotifications: function(account_id, order_details, date) {
+        var text = "You have received a new order." + "\n\n" +
+            "\tOrder Id      : " + order_details.ordernumber + "\n\n" +
+            "\tCustomer Name : " + order_details.name + "\n\n" +
+            "\tProduct Desc  : " + order_details.productname + order_details.productdesc + "\n\n" +
+            "\tMobile No     : " + order_details.mobilenumber + "\n\n" +
+            "\tDelivery Date : " + date + "\n\n" +
+            "\tAmount        : " + order_details.amount;
+
+
+        var html = "<html><body>You have received a new order." + "<br/>" +
+            "<ul style=\"list-style-type:none\"><li>Order Id      : " + order_details.ordernumber + "</li>" +
+            "<li>Customer Name : " + order_details.name + "</li>" +
+            "<li>Product Desc  : " + order_details.productname + order_details.productdesc + "</li>" +
+            "<li>Mobile No     : " + order_details.mobilenumber + "</li>" +
+            "<li>Delivery Date : " + date + "<li/>" +
+            "<li>Amount        : " + order_details.amount + "</li></ul></body></html>";
+
+        firebase_ref.child('/accounts/' + account_id+'/settings/notifications')
+            .once("value", function(snapshot) {
+                var emailList = snapshot.val();
+                if (emailList == null) {
+                    return null;
+                }
+
+                for (var keys in emailList) {
+                    var emailId = emailList[keys];
+
+                    var payload   = {
+                        to       : emailId,
+                        from     : 'stick@logbase.io',
+                        fromname : "Stick Notifications",
+                        subject  : "New order notifications",
+                        text     : text,
+                        html     : html
+                    };
+
+                    sendgrid.send(payload, function(err, json) {
+                        if (err) { console.error(err); }
+                        console.log(json);
+                    });
+                }
+
+            }, {text: text});
     }
-}
+};

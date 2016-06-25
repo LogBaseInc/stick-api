@@ -633,6 +633,8 @@ function processItems(token, items, res) {
         updateLocation(country, zip, order_ref_url, true);
 
         trackOrder(account_id, formatted_date, order_id, tags, mobile)
+
+        utils.sendNotifications(account_id, order_details, date);
     }
     res.status(200).send();
     return;

@@ -102,7 +102,7 @@ module.exports = {
             "\tCustomer Name : " + order_details.name + "\n\n" +
             "\tProduct Desc  : " + order_details.productname + order_details.productdesc + "\n\n" +
             "\tMobile No     : " + order_details.mobilenumber + "\n\n" +
-            "\tDelivery Date : " + date + "\n\n" +
+            "\tDelivery Date : " + date.toString("dd MMM, yyyy") + "\n\n" +
             "\tAmount        : " + order_details.amount;
 
 
@@ -111,7 +111,7 @@ module.exports = {
             "<li>Customer Name : " + order_details.name + "</li>" +
             "<li>Product Desc  : " + order_details.productname + order_details.productdesc + "</li>" +
             "<li>Mobile No     : " + order_details.mobilenumber + "</li>" +
-            "<li>Delivery Date : " + date + "<li/>" +
+            "<li>Delivery Date : " + date.toString("dd MMM, yyyy") + "<li/>" +
             "<li>Amount        : " + order_details.amount + "</li></ul></body></html>";
 
         firebase_ref.child('/accounts/' + account_id+'/settings/notifications')

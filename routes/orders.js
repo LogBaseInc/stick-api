@@ -93,7 +93,7 @@ config_ref.on('child_removed', function(snapshot) {
 //APIs
 router.post('/:token/', function (req, res) {
     var token = req.params.token || " ";
-    var sendNotifications = false;
+    var sendNotifications = true;
     if(req.query.new && req.query.new == "true") {
         sendNotifications = true;
     }
@@ -105,7 +105,7 @@ router.post('/:token/', function (req, res) {
 
 router.post('/batch/:token', function(req, res) {
     var token = req.params.token || " ";
-    var sendNotifications = false;
+    var sendNotifications = true;
     if(req.query.new && req.query.new == "true") {
         sendNotifications = true;
     }

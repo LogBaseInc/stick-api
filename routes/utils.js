@@ -97,7 +97,7 @@ module.exports = {
     },
 
     sendNotifications: function(account_id, order_details, date) {
-        var text = "You have received a new order." + "\n\n" +
+        var text = "You have a notification for a new/updated order." + "\n\n" +
             "\tOrder Id      : " + order_details.ordernumber + "\n\n" +
             "\tCustomer Name : " + order_details.name + "\n\n" +
             "\tProduct Desc  : " + order_details.productname + order_details.productdesc + "\n\n" +
@@ -106,7 +106,7 @@ module.exports = {
             "\tAmount        : " + order_details.amount;
 
 
-        var html = "<html><body>You have received a new order." + "<br/>" +
+        var html = "<html><body>You have a notification for a new/updated order." + "<br/>" +
             "<ul style=\"list-style-type:none\"><li>Order Id      : " + order_details.ordernumber + "</li>" +
             "<li>Customer Name : " + order_details.name + "</li>" +
             "<li>Product Desc  : " + order_details.productname + order_details.productdesc + "</li>" +
@@ -128,7 +128,7 @@ module.exports = {
                         to       : emailId,
                         from     : 'stick@logbase.io',
                         fromname : "Stick Notifications",
-                        subject  : "New order notifications",
+                        subject  : "Order " + order_details.ordernumber + " created/updated",
                         text     : text,
                         html     : html
                     };

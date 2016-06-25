@@ -91,21 +91,31 @@ config_ref.on('child_removed', function(snapshot) {
 
 
 //APIs
-router.post('/:token', function (req, res) {
+router.post('/:token/', function (req, res) {
     var token = req.params.token || " ";
+    var sendNotifications = false;
+    if(req.query.new && req.query.new == "true") {
+        sendNotifications = true;
+    }
+
     client.log({body : req.body, token : token}, ["POST"]);
-    processItems(token, [req.body], res);
+    processItems(token, [req.body], res, sendNotifications);
 });
 
 
 router.post('/batch/:token', function(req, res) {
     var token = req.params.token || " ";
+    var sendNotifications = false;
+    if(req.query.new && req.query.new == "true") {
+        sendNotifications = true;
+    }
+
     client.log({body : req.body, token : token}, ["POST", "batch"]);
     if (req.body.length <= 0) {
         res.status(400).send({"error" : "No orders to process"});
         return;
     }
-    processItems(token, req.body, res);
+    processItems(token, req.body, res, sendNotifications);
 });
 
 router.delete("/:token", function(req, res){
@@ -477,7 +487,7 @@ function incrementApiCount(token) {
     return;
 }
 
-function processItems(token, items, res) {
+function processItems(token, items, res, sendNotifications) {
     /*
      * Validate token
      */
@@ -632,9 +642,11 @@ function processItems(token, items, res) {
         order_ref.update(order_details);
         updateLocation(country, zip, order_ref_url, true);
 
-        trackOrder(account_id, formatted_date, order_id, tags, mobile)
+        trackOrder(account_id, formatted_date, order_id, tags, mobile);
 
-        utils.sendNotifications(account_id, order_details, date);
+        if (sendNotifications == true) {
+            utils.sendNotifications(account_id, order_details, date);
+        }
     }
     res.status(200).send();
     return;

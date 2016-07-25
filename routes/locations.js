@@ -84,7 +84,7 @@ function process_events(source_id, version, data, res) {
             //2. Update Firebase with the location
             send_to_firebase(source_id, parsed_data, account_id);
             //3. Send to Kinesis
-            send_to_kinesis(source_id, parsed_data);
+            //send_to_kinesis(source_id, parsed_data);
         }
         res.status(200).end();
     } else

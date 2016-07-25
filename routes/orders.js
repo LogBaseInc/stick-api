@@ -699,12 +699,13 @@ function trackOrder(accountid, date, orderid, tags, mobilenumber) {
 function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobilenumber) {
     if(trackyourorder == "true") {
         var token = accountid +"_"+orderid;
+        var path = accountid + "_" + date + "_" + orderid;
         firebase_ref.child('/trackurl/'+date+"/"+token)
         .once("value", function(snapshot) {
             if(snapshot.val() == null || snapshot.val() == undefined) {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token);
                 trackurl_ref.update({status : "Placed", history: {placed: new Date().getTime()}});
-                //sendOrderTrackSMS(this.accountid, this.orderid, this.token, this.mobilenumber);
+                sendOrderTrackSMS(this.accountid, this.orderid, path, this.mobilenumber);
             }
             else if(tags.indexOf('RWD') >=0 && snapshot.val().status == "Placed") {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/status");
@@ -723,6 +724,7 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobile
 }
 
 function sendOrderTrackSMS(accountid, orderid, token, mobilenumber) {
+    mobilenumber = "9901651997";
     Bitly.shorten({longUrl:"http://trackorder.azurewebsites.net/?token="+token}, function(err, results) {
         var resultobj = JSON.parse(results);
         if(resultobj.status_code == 200) {

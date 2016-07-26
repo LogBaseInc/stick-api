@@ -702,6 +702,13 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobile
         var path = accountid + "_" + date + "_" + orderid;
         firebase_ref.child('/trackurl/'+date+"/"+token)
         .once("value", function(snapshot) {
+            client.log({
+                accountid : accountid,
+                orderid : orderid,
+                date : date,
+                mobilenumber : mobilenumber,
+                snapshot : snapshot.val()
+            }, ["sms"]);
             if(snapshot.val() == null || snapshot.val() == undefined) {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token);
                 trackurl_ref.update({status : "Placed", history: {placed: new Date().getTime()}});

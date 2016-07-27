@@ -22,6 +22,10 @@ account_id_ref.on('child_added', function(snapshot, prevChildKey) {
     account_id_cache[new_entry.key()] = new_entry.val();
 });
 
+var order_id_cache = new Array(5);
+var order_id_index = 0;
+var order_id_length = 5;
+
 account_id_ref.on('child_changed', function(snapshot) {
     var changed_entry = snapshot;
     account_id_cache[changed_entry.key()] = changed_entry.val();
@@ -140,5 +144,19 @@ module.exports = {
                 }
 
             }, {text: text});
+    },
+
+    pushOrderId : function(order_id) {
+        order_id_cache[order_id_index] = order_id;
+        order_id_index = (order_id_index + 1) % order_id_length;
+    },
+
+    checkOrderIdPresent :  function (order_id) {
+        for (var index in order_id_cache) {
+            if (order_id_cache[index] == order_id) {
+                return true;
+            }
+        }
+        return false;
     }
 };

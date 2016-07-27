@@ -731,6 +731,13 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobile
 }
 
 function sendOrderTrackSMS(accountid, orderid, token, mobilenumber) {
+
+    if (utils.checkOrderIdPresent(orderid)) {
+        return;
+    } else {
+        utils.pushOrderId(orderid);
+    }
+
     mobilenumber = "9901651997";
     Bitly.shorten({longUrl:"http://trackorder.azurewebsites.net/?token="+token}, function(err, results) {
         var resultobj = JSON.parse(results);

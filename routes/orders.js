@@ -738,7 +738,6 @@ function sendOrderTrackSMS(accountid, orderid, token, mobilenumber) {
         utils.pushOrderId(orderid);
     }
 
-    mobilenumber = "9677666498";
     Bitly.shorten({longUrl:"http://trackorder.azurewebsites.net/?token="+token}, function(err, results) {
         var resultobj = JSON.parse(results);
         if(resultobj.status_code == 200) {

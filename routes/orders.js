@@ -642,7 +642,7 @@ function processItems(token, items, res, sendNotifications) {
         order_ref.update(order_details);
         updateLocation(country, zip, order_ref_url, true);
 
-        trackOrder(account_id, formatted_date, order_id, tags, mobile);
+        trackOrder(account_id, formatted_date, order_id, tags, mobile, cod_amount, name);
 
         if (sendNotifications == true) {
             utils.sendNotifications(account_id, order_details, date);
@@ -680,7 +680,7 @@ function updateLocation(country, zip, order_ref_url, retry) {
     request(options, callback);
 }
 
-function trackOrder(accountid, date, orderid, tags, mobilenumber) {
+function trackOrder(accountid, date, orderid, tags, mobilenumber, price, name) {
     var trackyourorder = utils.getAccountTrackyourorder(accountid);
 
     if(trackyourorder == null) {
@@ -688,15 +688,64 @@ function trackOrder(accountid, date, orderid, tags, mobilenumber) {
         .once("value", function(snapshot) {
             var istrackenabled = (snapshot.val() != null && snapshot.val() != undefined && snapshot.val() != "" ) ? snapshot.val().toString() : "false";
             utils.setAccountTrackyourorder(this.accountid, istrackenabled);
-            setOrderTrackUrl(istrackenabled, this.accountid, this.date, this.orderid, this.tags, this.mobilenumber);
-        },{accountid: accountid, date: date, orderid: orderid, tags: tags, mobilenumber : mobilenumber});
+            setOrderTrackUrl(istrackenabled, this.accountid, this.date, this.orderid, this.tags,
+                this.mobilenumber, this.price, this.name);
+        },{
+                accountid: accountid, date: date, orderid: orderid, tags: tags,
+                mobilenumber : mobilenumber, price : price, name : name
+            });
     }
     else {
-        setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobilenumber);
+        setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobilenumber, price, name);
     }
 }
 
-function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobilenumber) {
+function checkAndSendSmsNotification(accountid, type, orderid, price, mobilenumber, name, path) {
+    var sms = utils.getAccountSmsSetting(accountid);
+
+    if(sms == null) {
+        firebase_ref.child('/accounts/' + accountid+'/settings/sms')
+            .once("value", function(snapshot) {
+                if (snapshot.val() == null || snapshot.val() == undefined) {
+                    return;
+                }
+                sms = snapshot.val();
+                utils.setAccountSmsSetting(this.accountid, sms);
+
+                if (sms[type] == true) {
+                    sendSmsNotification(accountid, type, orderid, price, mobilenumber, name)
+                }
+
+                if (sms['tracking'] == true && type == "neworder") {
+                    sendOrderTrackSMS(this.accountid, this.orderid, this.path, this.mobilenumber);
+                }
+            }, {
+                accountid: accountid, type: type, orderid: orderid,
+                price: price, mobilenumber : mobilenumber,
+                name: name, path: path
+            });
+    }
+    else {
+        if (sms[type] == true) {
+            sendSmsNotification(accountid, type, orderid, price, mobilenumber, name);
+        }
+
+        if (sms['tracking'] == true && type == "neworder") {
+            sendOrderTrackSMS(accountid, orderid, path, mobilenumber);
+        }
+
+    }
+}
+
+function sendSmsNotification(accountid, type, orderid, price, mobilenumber, name, sms) {
+    if (type == "neworder") {
+        utils.sendOrderConfirmationSms(accountid, orderid, price, mobilenumber, name)
+    } else if (type == "shipment") {
+        utils.sendShipmentSms(accountid, orderid, price, mobilenumber, name)
+    }
+}
+
+function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobilenumber, price, name) {
     if(trackyourorder == "true") {
         var token = accountid +"_"+orderid;
         var path = accountid + "_" + date + "_" + orderid;
@@ -712,7 +761,8 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobile
             if(snapshot.val() == null || snapshot.val() == undefined) {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token);
                 trackurl_ref.update({status : "Placed", history: {placed: new Date().getTime()}});
-                sendOrderTrackSMS(this.accountid, this.orderid, path, this.mobilenumber);
+                //sendOrderTrackSMS(this.accountid, this.orderid, path, this.mobilenumber);
+                checkAndSendSmsNotification(this.accountid, "neworder", this.orderid, this.price, this.mobilenumber, this.name, path)
             }
             else if(tags.indexOf('RWD') >=0 && snapshot.val().status == "Placed") {
                 var trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/status");
@@ -726,7 +776,10 @@ function setOrderTrackUrl(trackyourorder, accountid, date, orderid, tags, mobile
                 trackurl_ref = firebase_ref.child('/trackurl/'+this.date + "/"+ this.token+"/history/prepared");
                 trackurl_ref.set(new Date().getTime());
             }
-        }, {accountid: accountid, token : token, date : date, orderid: orderid, mobilenumber : mobilenumber});
+        }, {
+                accountid: accountid, token : token, date : date, orderid: orderid,
+                mobilenumber : mobilenumber, price : price, name : name
+            });
     }
 }
 
@@ -746,14 +799,14 @@ function sendOrderTrackSMS(accountid, orderid, token, mobilenumber) {
 
             var msg91obj = utils.getAccountMSG91(accountid);
             if(msg91obj != null && msg91obj != undefined) {
-                sendSMS(msg91obj, mobilenumber, text)
+                utils.sendSMS(msg91obj, mobilenumber, text)
             }
             else {
                 firebase_ref.child('/accounts/'+accountid+"/settings/nickname")
                 .once("value", function(snapshot) {
                     var msg91obj = require("msg91")(MSG91_API, snapshot.val().toString(), MSG91_ROUTE_NO);
                     utils.setAccountMSG91(accountid, msg91obj);
-                    sendSMS(msg91obj, this.mobilenumber, this.text);
+                    utils.sendSMS(msg91obj, this.mobilenumber, this.text);
                 }, {mobilenumber : mobilenumber, text : text});
             }
         }
@@ -761,73 +814,6 @@ function sendOrderTrackSMS(accountid, orderid, token, mobilenumber) {
             console.log(results, err);
         }
     });
-}
-
-function sendSMS(msg91obj, mob, text) {
-    client.log({mob : mob, text : text}, ['MSG91', 'debug_info']);
-    var mobNo = parseMobNumber(mob);
-    if (mobNo == null) {
-        client.log({mobile : mob, message : text}, ['MSG91']);
-        sendEmail("kousik@logbase.io", null, "Stick Order Placed - SMS failed", text + " " + mob);
-        return;
-    }
-    msg91obj.send(mobNo, text, function(err, response){
-        console.log(err);
-        console.log(response);
-    });
-}
-
-/*
- * Send notification mails
- */
-function sendEmail(emailId, order, subject, text) {
-    var payload   = {
-        to      : emailId,
-        from    : 'stick-write@logbase.io',
-        subject : subject,
-        text    : text
-    }
-
-    sendgrid.send(payload, function(err, json) {
-        if (err) { console.error(err); }
-        console.log(json);
-    });
-}
-
-function parseMobNumber(mob) {
-    console.log(mob);
-    // Cases where two numbers are provided. Pick the first 10 - 12 digit mob number
-    if (mob.length > 20) {
-        var tmp = mob.match(/\d{10,12}/);
-        if (tmp != null) {
-            mob = tmp[0];
-        }
-    }
-
-    // Pick only the numbers. Remove special characters
-    var numb = mob.match(/\d/g);
-    numb = numb.join("");
-
-    // Remove leading zeroes
-    numb = numb.replace(/^0+/, '');
-
-    switch (numb.length) {
-        case 10:
-            return numb;
-        case 11:
-            if (numb.indexOf('0') == 0) {
-                return numb.substr(1, 10);
-            }
-            return null;
-        case 12:
-            if (numb.indexOf('91') == 0) {
-                return numb.substr(2, 10);
-            }
-            return null;
-        default:
-            return null;
-    }
-    return null;
 }
 
 module.exports = router;

@@ -3,6 +3,8 @@ var router = express.Router();
 var Firebase = require("firebase");
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
 var sendgrid  = require('sendgrid')(process.env.SENDGRID_KEY);
+var MSG91_API = process.env.MSG91_API;
+var MSG91_ROUTE_NO = 4; // transactional route
 
 //Authenticate Firebase
 var firebase_secret = process.env.FIREBASE_SECRET;
@@ -42,7 +44,22 @@ var account_trackyourorder_cache = {};
 //Cache firebase account - msg91 mapping
 var account_msg91_cache = {};
 
-module.exports = {
+//Cache firebase account - enable sms notification
+var account_sms_settings_cache = {}
+
+
+var loggly = require('loggly');
+var loggly_token = process.env.LOGGLY_TOKEN || "7b9f6d3d-01ed-45c5-b4ed-e8d627764998";
+var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN || "kousik";
+
+var client = loggly.createClient({
+    token: loggly_token,
+    subdomain: loggly_sub_domain,
+    tags: ["stick", "orders"],
+    json:true
+});
+
+var self = module.exports = {
     getAccountIds: function(){
         return account_id_cache;
     },
@@ -73,6 +90,14 @@ module.exports = {
 
     setAccountMSG91 : function(account_id, msg91) {
         return account_msg91_cache[account_id] = msg91;
+    },
+
+    getAccountSmsSetting : function(account_id) {
+        return account_sms_settings_cache[account_id];
+    },
+
+    setAccountSmsSetting : function(account_id, sms_settings) {
+        return account_sms_settings_cache[account_id] = sms_settings;
     },
 
     getAllAccountId : function() {
@@ -158,5 +183,107 @@ module.exports = {
             }
         }
         return false;
+    },
+
+    sendOrderConfirmationSms : function(accountid, orderid, price, mobilenumber, name) {
+        var userName = name;
+        var orderId = orderid;
+        var price = price;
+        var text = "Hi " + userName + ", We have received your order - " + orderId + " amounting to INR " + price + ".";
+        self.sendSmsInternal(accountid, text, mobilenumber);
+    },
+
+    sendOrderCancellationSms : function(accountid, orderid, price, mobilenumber, name) {
+        var userName = name;
+        var orderId = orderid;
+        var text = "Hi " + userName + ", Your Order " + orderId + " has been cancelled.";
+        self.sendSmsInternal(accountid, text, mobilenumber);
+    },
+
+    sendShipmentSms : function(accountid, orderid, price, mobilenumber, name) {
+        var userName = name;
+        var orderId = orderid;
+        var text = "Hi " + userName + ", Your Order " + orderId + " is out for delivery. You will be receiving them soon.";
+        self.sendSmsInternal(accountid, text, mobilenumber);
+    },
+
+    sendSmsInternal : function(accountid, text, mobilenumber) {
+        var msg91obj = self.getAccountMSG91(accountid);
+        if(msg91obj != null && msg91obj != undefined) {
+            self.sendSMS(msg91obj, mobilenumber, text)
+        }
+
+        else {
+            firebase_ref.child('/accounts/'+accountid+"/settings/nickname")
+                .once("value", function(snapshot) {
+                    var msg91obj = require("msg91")(MSG91_API, snapshot.val().toString(), MSG91_ROUTE_NO);
+                    self.setAccountMSG91(this.accountid, msg91obj);
+                    self.sendSMS(msg91obj, this.mobilenumber, this.text);
+                }, {mobilenumber : mobilenumber, text : text, accountid : accountid});
+        }
+    },
+
+    sendSMS : function(msg91obj, mob, text) {
+        client.log({mob : mob, text : text}, ['MSG91', 'debug_info']);
+        var mobNo = self.parseMobNumber(mob);
+        if (mobNo == null) {
+            client.log({mobile : mob, message : text}, ['MSG91']);
+            self.sendEmail("kousik@logbase.io", null, "Stick Order Placed - SMS failed", text + " " + mob);
+            return;
+        }
+        msg91obj.send(mobNo, text, function(err, response){
+            console.log(err);
+            console.log(response);
+        });
+    },
+
+    sendEmail : function (emailId, order, subject, text) {
+        var payload   = {
+            to      : emailId,
+            from    : 'stick-write@logbase.io',
+            subject : subject,
+            text    : text
+        }
+
+        sendgrid.send(payload, function(err, json) {
+            if (err) { console.error(err); }
+            console.log(json);
+        });
+    },
+
+    parseMobNumber : function(mob) {
+        console.log(mob);
+        // Cases where two numbers are provided. Pick the first 10 - 12 digit mob number
+        if (mob.length > 20) {
+            var tmp = mob.match(/\d{10,12}/);
+            if (tmp != null) {
+                mob = tmp[0];
+            }
+        }
+
+        // Pick only the numbers. Remove special characters
+        var numb = mob.match(/\d/g);
+        numb = numb.join("");
+
+        // Remove leading zeroes
+        numb = numb.replace(/^0+/, '');
+
+        switch (numb.length) {
+            case 10:
+                return numb;
+            case 11:
+                if (numb.indexOf('0') == 0) {
+                    return numb.substr(1, 10);
+                }
+                return null;
+            case 12:
+                if (numb.indexOf('91') == 0) {
+                    return numb.substr(2, 10);
+                }
+                return null;
+            default:
+                return null;
+        }
+        return null;
     }
 };

@@ -59,6 +59,28 @@ var client = loggly.createClient({
     json:true
 });
 
+//Cache firebase tokens - account mapping
+var tokens_cache = {};
+var tokens_ref = firebase_ref.child('/tokens');
+tokens_ref.on('child_added', function(snapshot, prevChildKey) {
+    var new_entry = snapshot;
+    console.log('Added tokens: ' + new_entry.key() + ' Account: ' + new_entry.val());
+    tokens_cache[new_entry.key()] = new_entry.val();
+});
+
+tokens_ref.on('child_changed', function(snapshot) {
+    var changed_entry = snapshot;
+    console.log('Updated tokens: ' + changed_entry.key() + ' Account: ' + changed_entry.val());
+    tokens_cache[changed_entry.key()] = changed_entry.val();
+});
+
+tokens_ref.on('child_removed', function(snapshot) {
+    var removed_entry = snapshot;
+    console.log('Removed tokens: ' + removed_entry.key() + ' Account: ' + removed_entry.val());
+    delete tokens_cache[removed_entry.key()];
+});
+
+
 var self = module.exports = {
     getAccountIds: function(){
         return account_id_cache;

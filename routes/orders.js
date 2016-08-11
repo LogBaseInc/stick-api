@@ -38,27 +38,6 @@ firebase_ref.authWithCustomToken(firebase_secret, function(error, authData) {
     }
 });
 
-//Cache firebase tokens - account mapping
-var tokens_cache = {};
-var tokens_ref = firebase_ref.child('/tokens');
-tokens_ref.on('child_added', function(snapshot, prevChildKey) {
-    var new_entry = snapshot;
-    console.log('Added tokens: ' + new_entry.key() + ' Account: ' + new_entry.val());
-    tokens_cache[new_entry.key()] = new_entry.val();
-});
-
-tokens_ref.on('child_changed', function(snapshot) {
-    var changed_entry = snapshot;
-    console.log('Updated tokens: ' + changed_entry.key() + ' Account: ' + changed_entry.val());
-    tokens_cache[changed_entry.key()] = changed_entry.val();
-});
-
-tokens_ref.on('child_removed', function(snapshot) {
-    var removed_entry = snapshot;
-    console.log('Removed tokens: ' + removed_entry.key() + ' Account: ' + removed_entry.val());
-    delete tokens_cache[removed_entry.key()];
-});
-
 var loggly = require('loggly');
 var loggly_token = process.env.LOGGLY_TOKEN || "7b9f6d3d-01ed-45c5-b4ed-e8d627764998";
 var loggly_sub_domain = process.env.LOGGLY_SUB_DOMAIN || "kousik";
@@ -148,18 +127,7 @@ router.delete("/:token", function(req, res){
         return;
     }
 
-    /*
-     * Validate token
-     */
-    if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !utils.validateAccountIds(token)) {
-        res.status(400).send({ "error" : "Invalid token" });
-        return;
-    }
-
-    var account_id = token;
-    if (!utils.validateAccountIds(token)) {
-        account_id = tokens_cache[token].accountId;
-    }
+    var account_id = utils.getAccountIdFromToken(token);
 
     if (account_id == null || account_id == undefined) {
         res.status(400).send({ "error" : "Invalid token" });
@@ -206,18 +174,7 @@ router.get('/:token/:deliverydate/:orderid?', function(req, res) {
 
     client.log({deliverydate : deliverydate, orderid : orderid, token : token}, ["GET"]);
 
-     /*
-     * Validate token
-     */
-    if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !utils.validateAccountIds(token)) {
-        res.status(400).send({ "error" : "Invalid token" });
-        return;
-    }
-
-    var account_id = token;
-    if (!utils.validateAccountIds(token)) {
-        account_id = tokens_cache[token].accountId;
-    }
+    var account_id = utils.getAccountIdFromToken(token);
 
     if (account_id == null || account_id == undefined) {
         res.status(400).send({ "error" : "Invalid token" });
@@ -291,18 +248,7 @@ router.get('/daterange/:token/:startdate/:enddate', function(req, res) {
 
     client.log({startdate : startdate, enddate : enddate, token : token}, ["daterange", "GET"]);
 
-     /*
-     * Validate token
-     */
-    if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !utils.validateAccountIds(token)) {
-        res.status(400).send({ "error" : "Invalid token" });
-        return;
-    }
-
-    var account_id = token;
-    if (!utils.validateAccountIds(token)) {
-        account_id = tokens_cache[token].accountId;
-    }
+    var account_id = utils.getAccountIdFromToken(token);
 
     if (account_id == null || account_id == undefined) {
         res.status(400).send({ "error" : "Invalid token" });
@@ -447,6 +393,7 @@ function parse_delivery_time(start_time, end_time) {
 }
 
 function daily_api_usage_limit_reached(token) {
+    var tokens_cache = utils.getTokensCache();
     var dateIndex = Date.today().toString("yyyyMMdd");
     var orderCount = tokens_cache[token].orderCount;
 
@@ -466,6 +413,7 @@ function daily_api_usage_limit_reached(token) {
 }
 
 function incrementApiCount(token) {
+    var tokens_cache = utils.getTokensCache();
     var dateIndex = Date.today().toString("yyyyMMdd");
     var count = tokens_cache[token].orderCount.count;
     var date = tokens_cache[token].orderCount.date;
@@ -488,18 +436,7 @@ function incrementApiCount(token) {
 }
 
 function processItems(token, items, res, sendNotifications) {
-    /*
-     * Validate token
-     */
-    if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !utils.validateAccountIds(token)) {
-        res.status(400).send({ "error" : "Invalid token" });
-        return;
-    }
-
-    var account_id = token;
-    if (!utils.validateAccountIds(token)) {
-        account_id = tokens_cache[token].accountId;
-    }
+    var account_id = utils.getAccountIdFromToken(token);
 
     if (account_id == null || account_id == undefined) {
         res.status(400).send({ "error" : "Invalid token" });

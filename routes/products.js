@@ -32,12 +32,15 @@ router.get('/brief/:accountid', function(req, res){
 });
 
 router.get('/:accountid', function(req, res){
-    var account_id = req.params.accountid || " ";
+    var token = req.params.accountid || " ";
+
+    var account_id = utils.getAccountIdFromToken(token);
+
     var resp_data = [];
     var prev_result = null;
 
     if (utils.validateAccountIds(account_id) != true) {
-        res.status(400).send("Invalid account id");
+        res.status(400).send("Invalid token");
         return;
     }
 
@@ -45,9 +48,11 @@ router.get('/:accountid', function(req, res){
 });
 
 router.post('/:accountid', function (req, res) {
-    var account_id = req.params.accountid || " ";
+    var token = req.params.accountid || " ";
     var products = req.body;
     var product_list = [];
+
+    var account_id = utils.getAccountIdFromToken(token);
 
     if (products.length == 0) {
         res.status(400).send("Invalid request. No products provided")
@@ -55,7 +60,7 @@ router.post('/:accountid', function (req, res) {
     }
 
     if (utils.validateAccountIds(account_id) != true) {
-        res.status(400).send("Invalid account id");
+        res.status(400).send("Invalid token");
         return;
     }
 

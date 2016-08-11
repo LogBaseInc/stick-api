@@ -307,5 +307,25 @@ var self = module.exports = {
                 return null;
         }
         return null;
+    },
+
+    getAccountIdFromToken : function(token) {
+        /*
+         * Validate token
+         */
+        if ((tokens_cache[token] == null || tokens_cache[token] == undefined) && !self.validateAccountIds(token)) {
+            return null;
+        }
+
+        var account_id = token;
+        if (!self.validateAccountIds(token)) {
+            account_id = tokens_cache[token].accountId;
+        }
+
+        return account_id;
+    },
+
+    getTokensCache : function() {
+        return tokens_cache;
     }
 };

@@ -231,7 +231,7 @@ var self = module.exports = {
 
     sendSmsInternal : function(accountid, text, mobilenumber) {
         var msg91obj = null;
-                    //self.getAccountMSG91(accountid);
+        //self.getAccountMSG91(accountid);
         if(msg91obj != null && msg91obj != undefined) {
             self.sendSMS(msg91obj, mobilenumber, text)
         }
@@ -324,6 +324,14 @@ var self = module.exports = {
         }
 
         return account_id;
+    },
+
+    getUserIdFromToken : function(token) {
+        if (self.getAccountIdFromToken == null) {
+            return null;
+        }
+
+        return tokens_cache[token].userId;
     },
 
     getTokensCache : function() {

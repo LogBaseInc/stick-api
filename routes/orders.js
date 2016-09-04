@@ -738,7 +738,8 @@ function sendOrderTrackSMS(accountid, orderid, token, mobilenumber) {
             var url = resultobj.data.url;
             var text = "Please track your order #" + orderid + " here - " + url;
 
-            var msg91obj = utils.getAccountMSG91(accountid);
+            var msg91obj = null;
+            //msg91obj = utils.getAccountMSG91(accountid);
             client.log({ accountid : accountid, orderid : orderid, text : text, mobile : mobilenumber},
                 ["MSG91", "debug_info"]);
             if(msg91obj != null && msg91obj != undefined) {

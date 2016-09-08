@@ -229,6 +229,13 @@ var self = module.exports = {
         self.sendSmsInternal(accountid, text, mobilenumber);
     },
 
+    sendDeliverySms : function(accountid, orderid, price, mobilenumber, name) {
+        var userName = name;
+        var orderId = orderid;
+        var text = "Hi " + userName + ", Your Order " + orderId + " is delivered.";
+        self.sendSmsInternal(accountid, text, mobilenumber);
+    },
+
     sendSmsInternal : function(accountid, text, mobilenumber) {
         var msg91obj = null;
         //self.getAccountMSG91(accountid);

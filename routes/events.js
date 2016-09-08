@@ -60,7 +60,7 @@ router.post('/app', function(req, res) {
     client.log(req.body, ["events"]);
 
     console.log(activity_date);
-    console.log(hook_url, device_id);
+    console.log(hook_url, device_id, activity);
     if (activity_date == null || activity_date == undefined || activity_date == "Invalid Date") {
         res.status(400).send("Invalid time_ms");
     }
@@ -71,6 +71,10 @@ router.post('/app', function(req, res) {
     }
 
     trackOrder(account_id, activity, date, order_id, device_id);
+
+    if (activity == "PICKEDUP" || activity == "DELIVERED") {
+        send_sms(account_id, activity, order_id, date);
+    }
     res.status(200).end();
 });
 
@@ -172,3 +176,45 @@ function post_to_web_hook(order_id, account_id, hook_url, date, activity, time_m
     });
 }
 
+
+function send_sms(account_id, activity, order_id, date) {
+    var sms = utils.getAccountSmsSetting(account_id);
+    if(sms == null) {
+        firebase_ref.child('/accounts/' + account_id+'/settings/sms')
+            .once("value", function(snapshot) {
+                if (snapshot.val() == null || snapshot.val() == undefined) {
+                    return;
+                }
+                sms = snapshot.val();
+                utils.setAccountSmsSetting(this.account_id, sms);
+
+                fetch_name_and_send_sms(this.account_id, this.activity, this.order_id, this.date, sms)
+            }, {
+                account_id: account_id, order_id: order_id,
+                activity: activity, date : date
+            });
+    }
+    else {
+        fetch_name_and_send_sms(account_id, activity, order_id, date, sms)
+    }
+}
+
+function fetch_name_and_send_sms(account_id, activity, order_id, date, sms) {
+    if ((activity == "PICKEDUP" && sms['shipment'] == true) ||
+        (activity == "DELIVERED" && sms['delivery'] == true)) {
+        // fetch order details from firebase
+        firebase_ref.child('/accounts/' + account_id+'/unassignorders/'+date + '/' + order_id)
+            .once("value", function(snapshot) {
+                if (snapshot.val() == null || snapshot.val() == undefined) {
+                   return;
+                }
+                var order = snapshot.val();
+                console.log(order);
+                if (activity == "PICKEDUP") {
+                    utils.sendShipmentSms(account_id, order_id, order.amount, order.mobilenumber, order.name);
+                } else if (activity == "DELIVERED") {
+                    utils.sendDeliverySms(account_id, order_id, order.amount, order.mobilenumber, order.name);
+                }
+            });
+    }
+}

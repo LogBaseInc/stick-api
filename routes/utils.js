@@ -232,7 +232,7 @@ var self = module.exports = {
     sendDeliverySms : function(accountid, orderid, price, mobilenumber, name) {
         var userName = name;
         var orderId = orderid;
-        var text = "Hi " + userName + ", Your Order " + orderId + " is delivered.";
+        var text = "Hi " + userName + ", Your Order " + orderId + " is delivered. Thank you for ordering with us.";
         self.sendSmsInternal(accountid, text, mobilenumber);
     },
 

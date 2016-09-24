@@ -338,7 +338,11 @@ var self = module.exports = {
             return null;
         }
 
-        return tokens_cache[token].userId;
+        if (tokens_cache[token] != null && tokens_cache[token] != undefined) {
+            return tokens_cache[token].userId;
+        } else {
+            return null;
+        }
     },
 
     getTokensCache : function() {

@@ -213,6 +213,7 @@ var self = module.exports = {
         var price = price;
         var text = "Hi " + userName + ", We have received your order - " + orderId + " amounting to INR " + price + ".";
         self.sendSmsInternal(accountid, text, mobilenumber);
+        self.incrementSmsCount(accountid, "neworder");
     },
 
     sendOrderCancellationSms : function(accountid, orderid, price, mobilenumber, name) {
@@ -227,6 +228,7 @@ var self = module.exports = {
         var orderId = orderid;
         var text = "Hi " + userName + ", Your Order " + orderId + " is out for delivery. You will be receiving them soon.";
         self.sendSmsInternal(accountid, text, mobilenumber);
+        self.incrementSmsCount(accountid, "shipment");
     },
 
     sendDeliverySms : function(accountid, orderid, price, mobilenumber, name) {
@@ -234,6 +236,7 @@ var self = module.exports = {
         var orderId = orderid;
         var text = "Hi " + userName + ", Your Order " + orderId + " is delivered. Thank you for ordering with us.";
         self.sendSmsInternal(accountid, text, mobilenumber);
+        self.incrementSmsCount(accountid, "delivery");
     },
 
     sendSmsInternal : function(accountid, text, mobilenumber) {
@@ -347,5 +350,17 @@ var self = module.exports = {
 
     getTokensCache : function() {
         return tokens_cache;
+    },
+
+    incrementSmsCount: function(accountid, type) {
+        if (type != 'neworder' && type != 'shipment' && type != 'tracking' && type != 'delivery') {
+            client.log({accountid : accountid, type : type}, ['MSG91', 'sms_counter', 'Error']);
+            return;
+        }
+
+        var sms_ref = firebase_ref.child('/accounts/' + accountid + '/activity/sms/' + type);
+        sms_ref.transaction(function (current_value) {
+            return (current_value || 0) + 1;
+        });
     }
 };

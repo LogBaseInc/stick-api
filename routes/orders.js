@@ -735,6 +735,7 @@ function sendOrderTrackSMS(accountid, orderid, token, mobilenumber) {
     Bitly.shorten({longUrl:"http://trackorder.azurewebsites.net/?token="+token}, function(err, results) {
         var resultobj = JSON.parse(results);
         if(resultobj.status_code == 200) {
+            utils.incrementSmsCount(accountid, "tracking");
             var url = resultobj.data.url;
             var text = "Please track your order #" + orderid + " here - " + url;
 

@@ -264,6 +264,7 @@ var self = module.exports = {
             self.sendEmail("kousik@logbase.io", null, "Stick Order Placed - SMS failed", text + " " + mob);
             return;
         }
+        mobNo = '91' + mobNo;
         msg91obj.send(mobNo, text, function(err, response){
             console.log(err);
             console.log(response);

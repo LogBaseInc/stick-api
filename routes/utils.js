@@ -2,7 +2,10 @@ var express = require('express');
 var router = express.Router();
 var Firebase = require("firebase");
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
+
 var sendgrid  = require('sendgrid')(process.env.SENDGRID_KEY);
+require("datejs");
+
 var MSG91_API = process.env.MSG91_API;
 var MSG91_ROUTE_NO = 4; // transactional route
 
@@ -359,7 +362,8 @@ var self = module.exports = {
             return;
         }
 
-        var sms_ref = firebase_ref.child('/accounts/' + accountid + '/activity/sms/' + type);
+        var date = Date.today().toString('yyyyMM');
+        var sms_ref = firebase_ref.child('/accounts/' + accountid + '/activity/sms/' + date +'/' + type);
         sms_ref.transaction(function (current_value) {
             return (current_value || 0) + 1;
         });

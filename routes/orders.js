@@ -432,7 +432,7 @@ function processItems(token, items, res, sendNotifications) {
 }
 
 function initPlan(planRef, oldPlan, account_id) {
-    client.log({event: "Initializing plan"}, ["planinit"]);
+    client.log({event: "Initializing plan", accountid : account_id}, ["planinit"]);
     planRef.update({
         name: "free",
         startdate: Date.today().toString("yyyy/MM/dd"),
@@ -442,7 +442,7 @@ function initPlan(planRef, oldPlan, account_id) {
     });
 
     if (oldPlan) {
-        client.log({event: "Initializing plan", oldPlan : oldPlan}, ["planinit"]);
+        client.log({event: "Initializing plan", oldPlan : oldPlan, accountid : account_id}, ["planinit"]);
         var planHistoryRef = firebase_ref.child('/accounts/' + account_id + '/plan/history');
         planHistoryRef.push(oldPlan);
     }

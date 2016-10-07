@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var Firebase = require("firebase");
+//Firebase.enableLogging(true);
 var firebase_ref = new Firebase(process.env.FIREBASE_URL);
 var request = require('request');
 var utils = require("./utils.js");
@@ -392,49 +393,6 @@ function parse_delivery_time(start_time, end_time) {
     return resp;
 }
 
-function daily_api_usage_limit_reached(token) {
-    var tokens_cache = utils.getTokensCache();
-    var dateIndex = Date.today().toString("yyyyMMdd");
-    var orderCount = tokens_cache[token].orderCount;
-
-    if (orderCount == null || orderCount == undefined) {
-        return false;
-    }
-
-    if (dateIndex != orderCount.date) {
-        return false;
-    }
-
-    if (orderCount.count < API_USAGE_LIMIT_PER_DAY) {
-        return false;
-    }
-
-    return true;
-}
-
-function incrementApiCount(token) {
-    var tokens_cache = utils.getTokensCache();
-    var dateIndex = Date.today().toString("yyyyMMdd");
-    var count = tokens_cache[token].orderCount.count;
-    var date = tokens_cache[token].orderCount.date;
-
-    if (date == dateIndex) {
-        count+=1;
-    } else {
-        count = 1;
-        date = dateIndex;
-    }
-
-    var orderCount = {
-        date: date,
-        count: count
-    }
-
-    var count_ref = firebase_ref.child('/tokens/' + token + '/orderCount');
-    count_ref.update(orderCount);
-    return;
-}
-
 function processItems(token, items, res, sendNotifications) {
     var account_id = utils.getAccountIdFromToken(token);
 
@@ -442,6 +400,55 @@ function processItems(token, items, res, sendNotifications) {
         res.status(400).send({ "error" : "Invalid token" });
         return;
     }
+
+    //Check order count wrt to chosen plan
+    var planRef = firebase_ref.child('/accounts/' + account_id + '/plan/active');
+    planRef.once('value', function(snapshot) {
+        var plan = snapshot.val();
+        if (plan == null || plan == undefined) {
+            //Plan not created.
+            initPlan(this.planRef, null, account_id);
+        } else {
+            var planEndDate = Date.parse(plan.enddate);
+            if (planEndDate == null || planEndDate < Date.today()) {
+                initPlan(this.planRef, plan, account_id);
+            } else {
+                if (plan.currorders + this.items.length >= plan.maxorders) {
+                    //res.status(400).send({"error" :  "Max order limit reached for the current plan"});
+                    //return;
+                }
+            }
+        }
+        processItemsInternal(this.account_id, this.items, this.res, this.sendNotifications, this.token);
+
+    }, {
+        planRef : planRef,
+        account_id : account_id,
+        items: items,
+        res: res,
+        sendNotifications: sendNotifications,
+        token : token
+    });
+}
+
+function initPlan(planRef, oldPlan, account_id) {
+    client.log({event: "Initializing plan"}, ["planinit"]);
+    planRef.update({
+        name: "free",
+        startdate: Date.today().toString("yyyy/MM/dd"),
+        enddate: Date.today().addMonths(1).toString("yyyy/MM/dd"),
+        maxorders: 300,
+        currorders: 0
+    });
+
+    if (oldPlan) {
+        client.log({event: "Initializing plan", oldPlan : oldPlan}, ["planinit"]);
+        var planHistoryRef = firebase_ref.child('/accounts/' + account_id + '/plan/history');
+        planHistoryRef.push(oldPlan);
+    }
+}
+
+function processItemsInternal(account_id, items, res, sendNotifications, token) {
 
     for (var idx in items) {
         var order_id = items[idx].order_id;
@@ -528,18 +535,6 @@ function processItems(token, items, res, sendNotifications) {
             res.status(400).send({"error" : "Country is mandatory"});
             return;
         }
-        /*
-         * Check if we have reached daily api usage limit
-         */
-        if (token != account_id) {
-            if (daily_api_usage_limit_reached(token)) {
-                res.status(400).send({ "error": "You have reached daily limit for the api. " +
-                    "Api usage count for the day is " + API_USAGE_LIMIT_PER_DAY });
-                return;
-            }
-
-            incrementApiCount(token);
-        }
 
         var ts = new Date().getTime();
 
@@ -563,7 +558,6 @@ function processItems(token, items, res, sendNotifications) {
             time: slot.time_slot,
             tags: tags,
             url: url,
-            createdat: ts,
             zip: zip,
             items: itms,
             country: country,
@@ -581,8 +575,8 @@ function processItems(token, items, res, sendNotifications) {
         var order_ref_url = '/accounts/' + account_id + '/unassignorders/' + formatted_date + "/" + order_id;
         var order_ref = firebase_ref.child(order_ref_url);
         order_ref.update(order_details);
+        updateTimeStamp(account_id, formatted_date, order_id, ts);
         updateLocation(country, zip, order_ref_url, true);
-
         trackOrder(account_id, formatted_date, order_id, tags, mobile, cod_amount, name);
 
         if (sendNotifications == true) {
@@ -592,6 +586,22 @@ function processItems(token, items, res, sendNotifications) {
     res.status(200).send();
     return;
 };
+
+
+function updateTimeStamp(accountId, date, orderId, ts) {
+    var order_ref = firebase_ref.child('/accounts/' + accountId + '/unassignorders/' + date + "/" + orderId + "/createdat");
+    order_ref.transaction(function(oldValue) {
+        if (oldValue == null || oldValue == undefined) {
+            return ts;
+        } else {
+            return;
+        }
+    }, function(error, committed, snapshot) {
+        if(committed) {
+            utils.incrementOrderCount(accountId);
+        }
+    }, true);
+}
 
 
 function updateLocation(country, zip, order_ref_url, retry) {

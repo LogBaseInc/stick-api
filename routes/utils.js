@@ -366,13 +366,27 @@ var self = module.exports = {
         var sms_ref = firebase_ref.child('/accounts/' + accountid + '/activity/sms/' + date +'/' + type);
         sms_ref.transaction(function (current_value) {
             return (current_value || 0) + 1;
-        }, function(error, committed, snapshot){}, true);
+        }, function(error, committed, snapshot){
+            var global_sms_ref = firebase_ref.child('/globalstat/sms');
+            if (committed) {
+                global_sms_ref.transaction(function (current_count) {
+                    return (current_count || 0) + 1;
+                }, function(error, committed, snapshot){}, true);
+            }
+        }, true);
     },
 
     incrementOrderCount: function(accountid) {
         var order_ref = firebase_ref.child('/accounts/' + accountid + '/plan/active/currorders');
         order_ref.transaction(function (current_value) {
             return (current_value || 0) + 1;
-        }, function(error, committed, snapshot){}, true);
+        }, function(error, committed, snapshot){
+            var global_count_ref = firebase_ref.child('/globalstat/order');
+            if (committed) {
+                global_count_ref.transaction(function (current_count) {
+                    return (current_count || 0) + 1;
+                }, function(error, committed, snapshot){}, true);
+            }
+        }, true);
     }
 };

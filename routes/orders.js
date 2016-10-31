@@ -414,8 +414,8 @@ function processItems(token, items, res, sendNotifications) {
                 initPlan(this.planRef, plan, account_id);
             } else {
                 if (plan.currorders + this.items.length >= plan.maxorders) {
-                    //res.status(400).send({"error" :  "Max order limit reached for the current plan"});
-                    //return;
+                    res.status(400).send({"error" :  "Max order limit reached for the current plan."});
+                    return;
                 }
             }
         }

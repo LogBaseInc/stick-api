@@ -214,7 +214,8 @@ var self = module.exports = {
         var userName = name;
         var orderId = orderid;
         var price = price;
-        var text = "Hi " + userName + ", We have received your order - " + orderId + " amounting to INR " + price + ".";
+        var text = "Hi " + userName + ", We have received your order - " + orderId + " amounting to INR " + price + ". " +
+            "Thank you for placing an order with us.";
         self.sendSmsInternal(accountid, text, mobilenumber);
         self.incrementSmsCount(accountid, "neworder");
     },

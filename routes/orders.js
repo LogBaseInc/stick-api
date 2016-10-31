@@ -634,6 +634,7 @@ function updateLocation(country, zip, order_ref_url, retry) {
 function trackOrder(accountid, date, orderid, tags, mobilenumber, price, name) {
     var trackyourorder = utils.getAccountTrackyourorder(accountid);
 
+    // TODO - need to rework this logic
     if(trackyourorder == null) {
         firebase_ref.child('/accounts/' + accountid+'/settings/trackyourorder')
         .once("value", function(snapshot) {

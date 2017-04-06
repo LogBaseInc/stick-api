@@ -402,8 +402,10 @@ function processItems(token, items, res, sendNotifications) {
         return;
     }
 
+    processItemsInternal(this.account_id, this.items, this.res, this.sendNotifications, this.token);
+
     //Check order count wrt to chosen plan
-    var planRef = firebase_ref.child('/accounts/' + account_id + '/plan/active');
+/*    var planRef = firebase_ref.child('/accounts/' + account_id + '/plan/active');
     planRef.once('value', function(snapshot) {
         var plan = snapshot.val();
         if (plan == null || plan == undefined) {
@@ -429,7 +431,7 @@ function processItems(token, items, res, sendNotifications) {
         res: res,
         sendNotifications: sendNotifications,
         token : token
-    });
+    });*/
 }
 
 function initPlan(planRef, oldPlan, account_id) {

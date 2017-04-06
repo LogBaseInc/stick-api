@@ -402,7 +402,7 @@ function processItems(token, items, res, sendNotifications) {
         return;
     }
 
-    processItemsInternal(this.account_id, this.items, this.res, this.sendNotifications, this.token);
+    processItemsInternal(account_id, items, res, sendNotifications, token);
 
     //Check order count wrt to chosen plan
 /*    var planRef = firebase_ref.child('/accounts/' + account_id + '/plan/active');

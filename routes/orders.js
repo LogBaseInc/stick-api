@@ -78,6 +78,7 @@ router.post('/:token/', function (req, res) {
         sendNotifications = true;
     }
 
+    console.log({body : req.body, token : token}, ["POST"]);
     client.log({body : req.body, token : token}, ["POST"]);
     processItems(token, [req.body], res, sendNotifications);
 });

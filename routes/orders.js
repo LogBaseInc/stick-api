@@ -451,6 +451,7 @@ function initPlan(planRef, oldPlan, account_id) {
 
 function processItemsInternal(account_id, items, res, sendNotifications, token) {
 
+    console.log('Getting here', account_id, items);
     for (var idx in items) {
         var order_id = items[idx].order_id;
         var name = items[idx].name;
